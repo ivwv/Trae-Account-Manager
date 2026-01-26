@@ -1,3 +1,5 @@
+import { ThemeSwitcher } from "./ThemeSwitcher";
+
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
@@ -25,13 +27,14 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             className={`sidebar-item ${currentPage === item.id ? "active" : ""}`}
             onClick={() => onNavigate(item.id)}
           >
-            <span className="sidebar-icon">{item.icon}</span>
+            {/* <span className="sidebar-icon">{item.icon}</span> */}
             <span className="sidebar-label">{item.label}</span>
           </div>
         ))}
       </nav>
 
       <div className="sidebar-footer">
+        <ThemeSwitcher />
         <span className="version">v1.0.0</span>
       </div>
     </aside>

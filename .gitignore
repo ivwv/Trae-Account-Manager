@@ -9,16 +9,22 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+.pnpm-store
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 # Build outputs
 dist
 dist-ssr
+.vite
 *.local
+target
 src-tauri/target
-src-tauri/Cargo.lock
+src-tauri/bundle
 
 # Editor directories and files
 .vscode/*
@@ -36,7 +42,6 @@ Thumbs.db
 .DS_Store
 
 # Tauri
-src-tauri/target/
 src-tauri/WixTools
 
 # Temporary files
@@ -50,12 +55,14 @@ machine_part*.rs
 machine_new.rs
 temp_repo/
 
-# Git
-.git/
-
 # Claude AI
 .claude/
 
 # Application data (optional, uncomment if you don't want to track)
 # *.db
 # *.sqlite
+
+# Env files
+.env
+.env.*
+!.env.example

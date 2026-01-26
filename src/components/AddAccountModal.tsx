@@ -173,27 +173,7 @@ export function AddAccountModal({
                 <line x1="12" y1="22.08" x2="12" y2="12" />
               </svg>
               <h3>自动检测本地 Trae IDE 账号</h3>
-              <p>系统会自动读取本地 Trae IDE 当前登录的账号信息，无需手动输入。</p>
-              <div className="mode-features">
-                <div className="feature-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span>自动获取 Token</span>
-                </div>
-                <div className="feature-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span>自动获取用户信息</span>
-                </div>
-                <div className="feature-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span>一键导入</span>
-                </div>
-              </div>
+              <p>系统将自动读取本地 Trae IDE 客户端当前登录的账号信息</p>
             </div>
 
             {error && <div className="error-message">{error}</div>}
@@ -221,11 +201,7 @@ export function AddAccountModal({
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
               <h3>使用浏览器登录并自动导入</h3>
-              <ol>
-                <li>点击下方按钮打开登录窗口</li>
-                <li>在新窗口完成 Trae 登录</li>
-                <li>系统会自动获取信息并导入</li>
-              </ol>
+              <p>在新窗口完成登录后，系统会自动获取账号信息</p>
             </div>
 
             {error && <div className="error-message">{error}</div>}
@@ -258,11 +234,7 @@ export function AddAccountModal({
                 <path d="M5 12h14" />
               </svg>
               <h3>快速注册并自动导入</h3>
-              <ol>
-                <li>系统自动生成邮箱并完成注册</li>
-                <li>注册成功后自动获取账号信息</li>
-                <li>完成后会自动导入到列表</li>
-              </ol>
+              <p>系统自动生成邮箱完成注册，并导入到列表</p>
             </div>
 
             {error && <div className="error-message">{error}</div>}

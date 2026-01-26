@@ -595,31 +595,6 @@ function App() {
 
         {currentPage === "accounts" && (
           <>
-            <header className="page-header">
-              <div className="header-left">
-                <h2 className="page-title">账号管理</h2>
-                <p>管理您的 Trae 账号</p>
-              </div>
-              <div className="header-right">
-                <span className="account-count">共 {accounts.length} 个账号</span>
-                <button className="header-btn" onClick={handleImportAccounts} title="导入账号">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                  </svg>
-                  导入
-                </button>
-                <button className="header-btn" onClick={handleExportAccounts} title="导出账号" disabled={accounts.length === 0}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                  </svg>
-                  导出
-                </button>
-                <button className="add-btn" onClick={() => setShowAddModal(true)}>
-                  <span>+</span> 添加账号
-                </button>
-              </div>
-            </header>
-
             <main className="app-main">
               {accounts.length > 0 && (
                 <div className="toolbar">
@@ -650,6 +625,21 @@ function App() {
                     )}
                   </div>
                   <div className="toolbar-right">
+                    <button className="header-btn" onClick={handleImportAccounts} title="导入账号" style={{padding: '8px 14px'}}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                      </svg>
+                      导入
+                    </button>
+                    <button className="header-btn" onClick={handleExportAccounts} title="导出账号" disabled={accounts.length === 0} style={{padding: '8px 14px'}}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                      </svg>
+                      导出
+                    </button>
+                    <button className="add-btn" onClick={() => setShowAddModal(true)} style={{padding: '8px 16px', fontSize: '13px'}}>
+                      <span>+</span> 添加账号
+                    </button>
                     <div className="view-toggle">
                       <button
                         className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
@@ -717,7 +707,14 @@ function App() {
               ) : (
                 <div className="account-list">
                   <div className="list-header">
-                    <div className="list-col checkbox"></div>
+                    <div className="list-col checkbox" style={{ justifyContent: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === accounts.length && accounts.length > 0}
+                        onChange={handleSelectAll}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                      />
+                    </div>
                     <div className="list-col avatar"></div>
                     <div className="list-col info">账号信息</div>
                     <div className="list-col plan">套餐</div>

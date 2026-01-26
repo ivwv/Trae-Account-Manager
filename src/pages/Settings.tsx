@@ -377,7 +377,7 @@ export function Settings({
                 ?
               </button>
             </div>
-            <div className="setting-desc">切换账号后自动开启 Trae 隐私模式</div>
+            <div className="setting-desc">切换账号后自动开启 Trae 隐私模式，Trae将额外重启一次用来应用配置</div>
           </div>
           <div className="setting-action">
             <button

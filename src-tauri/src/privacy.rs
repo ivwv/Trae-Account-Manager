@@ -245,6 +245,7 @@ pub fn enable_privacy_mode_at_path_with_restart(
 ) -> Result<usize> {
     let result = enable_privacy_mode_at_path(db_path)?;
     println!("[INFO] 隐私模式写入完成，准备重启 Trae IDE");
+    println!("[INFO] Trae将额外重启一次用来应用配置");
     restart()?;
     Ok(result)
 }
