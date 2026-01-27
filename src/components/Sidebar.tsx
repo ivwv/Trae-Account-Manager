@@ -8,6 +8,7 @@ interface SidebarProps {
 const menuItems = [
   { id: "dashboard", label: "仪表盘", icon: "📊" },
   { id: "accounts", label: "账号管理", icon: "👥" },
+  { id: "stats", label: "统计数据", icon: "📈" },
   { id: "settings", label: "设置", icon: "⚙️" },
   { id: "about", label: "关于", icon: "ℹ️" },
 ];

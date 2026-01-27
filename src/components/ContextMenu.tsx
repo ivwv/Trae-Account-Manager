@@ -54,10 +54,17 @@ export function ContextMenu({
         className="context-menu"
         style={{ left: x, top: y }}
       >
-        <div className="context-menu-item" onClick={onRelogin}>
-          <span className="icon">🔁</span>
-          重新登录
-        </div>
+        {isCurrent ? (
+          <div className="context-menu-item" onClick={onRelogin}>
+            <span className="icon">🔁</span>
+            重新登录
+          </div>
+        ) : (
+          <div className="context-menu-item" onClick={onSwitchAccount}>
+            <span className="icon">🔀</span>
+            切换账号
+          </div>
+        )}
         <div className="context-menu-item" onClick={onRefresh}>
           <span className="icon">🔄</span>
           刷新数据
@@ -73,14 +80,6 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={onCopyToken}>
           <span className="icon">🔑</span>
           复制 Token
-        </div>
-        <div
-          className={`context-menu-item ${isCurrent ? "disabled" : ""}`}
-          onClick={isCurrent ? undefined : onSwitchAccount}
-          title={isCurrent ? "当前已是此账号" : "切换到此账号"}
-        >
-          <span className="icon">🔀</span>
-          切换账号
         </div>
         <div className="context-menu-item" onClick={onClaimGift}>
           <span className="icon">🎁</span>

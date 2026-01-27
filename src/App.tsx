@@ -11,6 +11,7 @@ import { AccountLoginModal } from "./components/AccountLoginModal";
 import { Toast, ToastMessage } from "./components/Toast";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { Dashboard } from "./pages/Dashboard";
+import { Stats } from "./pages/Stats";
 import { Settings } from "./pages/Settings";
 import { About } from "./pages/About";
 import * as api from "./api";
@@ -332,25 +333,39 @@ function App() {
     }
   };
 
-  // 切换账号
-  const handleSwitchAccount = async (accountId: string) => {
+  // 切换账号 / 重新登录（同逻辑）
+  const handleSwitchAccount = async (
+    accountId: string,
+    options?: { mode?: "switch" | "relogin"; force?: boolean }
+  ) => {
     const account = accounts.find((a) => a.id === accountId);
     if (!account) return;
 
+    const mode = options?.mode ?? "switch";
+    const force = options?.force ?? mode === "relogin";
+    const title = mode === "relogin" ? "重新登录" : "切换账号";
+    const message =
+      mode === "relogin"
+        ? `确定要重新登录账号 "${account.email || account.name}" 吗？\n\n系统将自动关闭 Trae IDE 并重新写入登录信息。`
+        : `确定要切换到账号 "${account.email || account.name}" 吗？\n\n系统将自动关闭 Trae IDE 并切换登录信息。`;
+    const infoToast = mode === "relogin" ? "正在重新登录，请稍候..." : "正在切换账号，请稍候...";
+    const successToast = mode === "relogin" ? "账号重新登录完成，请重新打开 Trae IDE" : "账号切换成功，请重新打开 Trae IDE";
+    const errorToast = mode === "relogin" ? "重新登录失败" : "切换账号失败";
+
     setConfirmModal({
       isOpen: true,
-      title: "切换账号",
-      message: `确定要切换到账号 "${account.email || account.name}" 吗？\n\n系统将自动关闭 Trae IDE 并切换登录信息。`,
+      title,
+      message,
       type: "warning",
       onConfirm: async () => {
         setConfirmModal(null);
-        addToast("info", "正在切换账号，请稍候...");
+        addToast("info", infoToast);
         try {
-          await api.switchAccount(accountId);
+          await api.switchAccount(accountId, { force });
           await loadAccounts();
-          addToast("success", "账号切换成功，请重新打开 Trae IDE");
+          addToast("success", successToast);
         } catch (err: any) {
-          addToast("error", err.message || "切换账号失败");
+          addToast("error", err.message || errorToast);
         }
       },
     });
@@ -401,28 +416,30 @@ function App() {
     }
   };
 
-  const handleRelogin = async (accountId: string) => {
+  const handleRelogin = async (accountId: string, options?: { forceManual?: boolean }) => {
     try {
       const account = await api.getAccount(accountId);
       const email = account.email || account.name;
       const maskedEmail = account.email?.includes("*") ?? false;
 
-      if (account.cookies) {
-        try {
-          await api.refreshToken(accountId);
-          await handleRefreshAccount(accountId, { silent: true });
-          addToast("success", "已使用 Cookie 刷新 Token");
-          return;
-        } catch {}
-      }
+      if (!options?.forceManual) {
+        if (account.cookies) {
+          try {
+            await api.refreshToken(accountId);
+            await handleRefreshAccount(accountId, { silent: true });
+            addToast("success", "已使用 Cookie 刷新 Token");
+            return;
+          } catch {}
+        }
 
-      if (account.password && account.email && !maskedEmail) {
-        try {
-          await api.refreshTokenWithPassword(accountId, account.password);
-          await handleRefreshAccount(accountId, { silent: true });
-          addToast("success", "已使用保存的密码刷新 Token");
-          return;
-        } catch {}
+        if (account.password && account.email && !maskedEmail) {
+          try {
+            await api.refreshTokenWithPassword(accountId, account.password);
+            await handleRefreshAccount(accountId, { silent: true });
+            addToast("success", "已使用保存的密码刷新 Token");
+            return;
+          } catch {}
+        }
       }
 
       setLoginModal({
@@ -578,6 +595,10 @@ function App() {
 
         {currentPage === "dashboard" && (
           <Dashboard accounts={accounts} hasLoaded={hasLoaded} />
+        )}
+
+        {currentPage === "stats" && (
+          <Stats accounts={accounts} hasLoaded={hasLoaded} />
         )}
 
         {currentPage === "accounts" && (
@@ -788,7 +809,7 @@ function App() {
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
           onRelogin={() => {
-            void handleRelogin(contextMenu.accountId);
+            handleSwitchAccount(contextMenu.accountId, { mode: "relogin" });
             setContextMenu(null);
           }}
           onViewDetail={() => {

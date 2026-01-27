@@ -51,13 +51,19 @@ export async function getAccount(accountId: string): Promise<Account> {
 }
 
 // 设置活跃账号
-export async function setActiveAccount(accountId: string): Promise<void> {
-  return invoke("switch_account", { accountId });
+export async function setActiveAccount(
+  accountId: string,
+  options?: { force?: boolean }
+): Promise<void> {
+  return invoke("switch_account", { accountId, force: options?.force });
 }
 
 // 切换账号（设置活跃账号并更新机器码）
-export async function switchAccount(accountId: string): Promise<void> {
-  return invoke("switch_account", { accountId });
+export async function switchAccount(
+  accountId: string,
+  options?: { force?: boolean }
+): Promise<void> {
+  return invoke("switch_account", { accountId, force: options?.force });
 }
 
 // 获取账号使用量

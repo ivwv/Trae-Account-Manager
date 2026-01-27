@@ -311,9 +311,9 @@ impl AccountManager {
     }
 
     /// 切换账号（设置活跃账号并将登录信息写入 Trae IDE）
-    pub fn switch_account(&mut self, account_id: &str) -> Result<()> {
+    pub fn switch_account(&mut self, account_id: &str, force: bool) -> Result<()> {
         // 检查是否已经是当前使用的账号
-        if self.store.current_account_id.as_deref() == Some(account_id) {
+        if !force && self.store.current_account_id.as_deref() == Some(account_id) {
             return Err(anyhow!("该账号已经是当前使用的账号"));
         }
 

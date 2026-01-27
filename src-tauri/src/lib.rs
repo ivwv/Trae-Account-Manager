@@ -1073,10 +1073,11 @@ async fn get_account(account_id: String, state: State<'_, AppState>) -> Result<A
 
 /// 鍒囨崲璐﹀彿锛堣缃椿璺冭处鍙峰苟鏇存柊鏈哄櫒鐮侊級
 #[tauri::command]
-async fn switch_account(account_id: String, state: State<'_, AppState>) -> Result<()> {
+async fn switch_account(account_id: String, force: Option<bool>, state: State<'_, AppState>) -> Result<()> {
     {
         let mut manager = state.account_manager.lock().await;
-        manager.switch_account(&account_id).map_err(ApiError::from)?;
+        let force = force.unwrap_or(false);
+        manager.switch_account(&account_id, force).map_err(ApiError::from)?;
     }
 
     let settings = state.settings.lock().await.clone();

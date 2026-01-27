@@ -24,12 +24,12 @@ const THEME_COLORS = {
   tooltipText: '#F5F9FE',
   gridStroke: 'rgba(255, 255, 255, 0.1)',
   textMuted: '#71717A',
-  heatmapEmpty: 'rgba(255, 255, 255, 0.06)',
+  heatmapEmpty: 'var(--heatmap-empty)',
   // Trae Gradient Colors (approximated as solid for now, or use gradient in CSS)
-  heatmapLow: '#0e4429', 
-  heatmapMid: '#006d32',
-  heatmapHigh: '#26a641',
-  heatmapMax: '#39d353'
+  heatmapLow: 'var(--heatmap-low)',
+  heatmapMid: 'var(--heatmap-mid)',
+  heatmapHigh: 'var(--heatmap-high)',
+  heatmapMax: 'var(--heatmap-max)'
 };
 
 // 1. Active Days Heatmap (Custom Implementation)
@@ -54,60 +54,60 @@ const ActiveDaysWidget: React.FC<{ data: Record<string, number> }> = ({ data }) 
   // Group by weeks for vertical layout (columns are weeks, rows are days)
   const weeks = useMemo(() => {
     const weeksArr = [];
-    
+
     // 1. Find the Sunday before (or on) the first date
     const firstDate = days[0].date;
     const startDayOfWeek = firstDate.getDay(); // 0=Sun
     // We need to prepend 'startDayOfWeek' days
-    
+
     // 2. Find the Saturday after (or on) the last date
     const lastDate = days[days.length - 1].date;
     const endDayOfWeek = lastDate.getDay(); // 6=Sat
     // We need to append '6 - endDayOfWeek' days
-    
+
     // Create a new full list
     const fullList = [];
-    
+
     // Prepend
     for (let i = startDayOfWeek; i > 0; i--) {
         const d = new Date(firstDate);
         d.setDate(d.getDate() - i);
         fullList.push({ date: d, count: -1, key: `pre-${d.toISOString()}` });
     }
-    
+
     // Add data
     fullList.push(...days);
-    
+
     // Append
     for (let i = 1; i <= 6 - endDayOfWeek; i++) {
         const d = new Date(lastDate);
         d.setDate(d.getDate() + i);
         fullList.push({ date: d, count: -1, key: `post-${d.toISOString()}` });
     }
-    
+
     // Chunk into weeks
     for (let i = 0; i < fullList.length; i += 7) {
         weeksArr.push(fullList.slice(i, i + 7));
     }
-    
+
     return weeksArr;
   }, [days]);
 
   // Generate Month Labels
   const monthLabels = useMemo(() => {
       const labels: { text: string, index: number }[] = [];
-      
+
       weeks.forEach((week, index) => {
           // Label the month if the week contains the 1st day of the month
           const firstDayOfMonth = week.find(day => day.date.getDate() === 1);
           if (firstDayOfMonth) {
-              labels.push({ 
-                  text: firstDayOfMonth.date.toLocaleString('default', { month: 'short' }), 
-                  index 
+              labels.push({
+                  text: firstDayOfMonth.date.toLocaleString('default', { month: 'short' }),
+                  index
               });
           }
       });
-      
+
       // If the first and last labels are the same (e.g. "Jan" ... "Jan"), remove the first one
       // This happens when the data spans exactly a year or slightly more, showing the same month at both ends
       if (labels.length > 1) {
@@ -117,7 +117,7 @@ const ActiveDaysWidget: React.FC<{ data: Record<string, number> }> = ({ data }) 
               labels.shift();
           }
       }
-      
+
       return labels;
   }, [weeks]);
 
@@ -139,8 +139,8 @@ const ActiveDaysWidget: React.FC<{ data: Record<string, number> }> = ({ data }) 
         <div className="heatmap-content">
           <div className="heatmap-months">
             {monthLabels.map((label, i) => (
-                <span 
-                    key={i} 
+                <span
+                    key={i}
                     className="heatmap-month-label"
                     style={{ left: `${label.index * 14}px` }} // 10px width + 4px gap = 14px
                 >
@@ -210,7 +210,7 @@ const AICodeAcceptedWidget: React.FC<{ count: number, breakdown: Record<string, 
           <BarChart layout="vertical" data={chartData} margin={{ left: 40, right: 10 }}>
             <XAxis type="number" hide />
             <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11, fill: THEME_COLORS.textMuted }} interval={0} />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: THEME_COLORS.tooltipBg, border: 'none', borderRadius: '4px', fontSize: '12px' }}
               itemStyle={{ color: THEME_COLORS.tooltipText }}
               cursor={{ fill: 'transparent' }}
@@ -309,25 +309,25 @@ const ActivityPeriodWidget: React.FC<{ data: Record<string, number> }> = ({ data
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={THEME_COLORS.gridStroke} opacity={0.5} />
-            <XAxis 
-                dataKey="displayHour" 
+            <XAxis
+                dataKey="displayHour"
                 tickFormatter={(tick) => `${String(tick).padStart(2, '0')}:00`}
                 interval={5}
                 tick={{ fill: THEME_COLORS.textMuted, fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
             />
-            <Tooltip 
+            <Tooltip
                 contentStyle={{ backgroundColor: THEME_COLORS.tooltipBg, border: 'none', borderRadius: '4px' }}
                 itemStyle={{ color: '#4ade80' }}
                 labelStyle={{ color: THEME_COLORS.textMuted }}
             />
-            <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#4ade80" 
-                fillOpacity={1} 
-                fill="url(#colorActivity)" 
+            <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#4ade80"
+                fillOpacity={1}
+                fill="url(#colorActivity)"
                 strokeWidth={2}
             />
           </AreaChart>
