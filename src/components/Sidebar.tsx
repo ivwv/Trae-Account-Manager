@@ -17,8 +17,20 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <span className="logo-icon">🚀</span>
-        <span className="logo-text">Trae Auto</span>
+        <svg
+          className="logo-icon-img"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+        <span className="logo-text">Trae Account Manager</span>
       </div>
 
       <nav className="sidebar-nav">
@@ -36,7 +48,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 
       <div className="sidebar-footer">
         <ThemeSwitcher />
-        <span className="version">v1.0.0</span>
+        <span className="version">v2.0.0</span>
       </div>
     </aside>
   );

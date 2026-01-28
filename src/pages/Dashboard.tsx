@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
-import type { UsageSummary, AccountBrief } from "../types";
+import { useMemo } from 'react';
+import type { UsageSummary } from "../types";
 import { UsageEvents } from "../components/UsageEvents";
 
 interface DashboardProps {
@@ -18,28 +18,20 @@ interface DashboardProps {
   refreshingIds?: Set<string>;
 }
 
-export function Dashboard({ accounts, hasLoaded = true, onSwitchAccount, onNavigate, onRefresh, refreshingIds }: DashboardProps) {
+export function Dashboard({ accounts, onSwitchAccount, onNavigate, onRefresh, refreshingIds }: DashboardProps) {
   // Helper to calculate percentage
   const getPercent = (used: number, limit: number) => {
     if (limit <= 0) return 0;
     return Math.round(((limit - used) / limit) * 100);
   };
 
-  const formatUsedCount = (used: number, limit: number) => {
-      if (limit <= 0) return '';
-      return `${limit - used}`;
-  };
+  // 已用数量格式化不再需要，直接在 UsageBar 中计算剩余
 
   // 1. Calculate Stats
   const stats = useMemo(() => {
     const totalAccounts = accounts.length;
     
-    // Average Fast Request (mapped to "Gemini 平均配额" for UI match)
-    const totalFastPercent = accounts.reduce((sum, a) => {
-      if (!a.usage) return sum;
-      return sum + getPercent(a.usage.fast_request_used, a.usage.fast_request_limit);
-    }, 0);
-    const avgFastPercent = totalAccounts > 0 ? Math.round(totalFastPercent / totalAccounts) : 0;
+    // Fast 百分比按整体剩余/总额度计算，详见下方 fastQuotaPercentage
 
     // Average Slow Request (mapped to "Claude 平均配额")
     const totalSlowPercent = accounts.reduce((sum, a) => {
@@ -135,18 +127,9 @@ export function Dashboard({ accounts, hasLoaded = true, onSwitchAccount, onNavig
   };
 
   const formatTimeRemaining = (resetTime: number) => {
-      const now = Date.now() / 1000; // Assuming resetTime is in seconds? 
-      // Wait, let's check if resetTime is seconds or ms. Usually APIs return seconds.
-      // But let's check usage. If it looks like 17xxxxxxxxx, it's ms.
-      // If 17xxxxxx, it's seconds.
-      // Let's assume the API handles it or standard check.
-      
-      // Safe check:
       const target = resetTime > 10000000000 ? resetTime : resetTime * 1000;
       const diff = target - Date.now();
-      
       if (diff <= 0) return '0m';
-      
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       return `${hours}h ${minutes}m`;
@@ -249,22 +232,62 @@ export function Dashboard({ accounts, hasLoaded = true, onSwitchAccount, onNavig
                 {currentAccount ? (
                     <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text-primary)' }}>{currentAccount.email || currentAccount.name}</span>
+                                <span style={{ 
+                                    background: 'var(--accent-bg)', 
+                                    color: 'var(--accent)', 
+                                    padding: '2px 8px', 
+                                    borderRadius: '4px', 
+                                    fontSize: '12px', 
+                                    fontWeight: '600',
+                                    border: '1px solid var(--accent)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}>
+                                    {currentAccount.plan_type || 'PRO'}
+                                </span>
                             </div>
-                            <span style={{ 
-                                background: 'var(--accent)', 
-                                color: 'white', 
-                                padding: '4px 12px', 
-                                borderRadius: '20px', 
-                                fontSize: '12px', 
-                                fontWeight: 'bold',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}>
-                                💎 {currentAccount.plan_type || 'PRO'}
-                            </span>
+                            {onRefresh && (
+                                <button
+                                    onClick={() => onRefresh(currentAccount.id)}
+                                    title="刷新数据"
+                                    disabled={refreshingIds?.has(currentAccount.id)}
+                                    style={{
+                                        background: 'var(--bg-hover)',
+                                        border: 'none',
+                                        cursor: refreshingIds?.has(currentAccount.id) ? 'not-allowed' : 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'var(--text-secondary)',
+                                        transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => !refreshingIds?.has(currentAccount.id) && (e.currentTarget.style.color = 'var(--text-primary)')}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                                >
+                                    <svg 
+                                        width="18" 
+                                        height="18" 
+                                        viewBox="0 0 24 24" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        strokeWidth="2" 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round"
+                                        style={{
+                                            animation: refreshingIds?.has(currentAccount.id) ? 'spin 1s linear infinite' : 'none'
+                                        }}
+                                    >
+                                        <path d="M23 4v6h-6"></path>
+                                        <path d="M1 20v-6h6"></path>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                    </svg>
+                                </button>
+                            )}
                         </div>
 
                         <div className="usage-bars" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -431,7 +454,7 @@ export function Dashboard({ accounts, hasLoaded = true, onSwitchAccount, onNavig
 }
 
 // Sub-components
-function StatCard({ icon, value, label, sub, status, statusColor, isWarning }: any) {
+function StatCard({ icon, value, label, status, statusColor, isWarning }: any) {
     return (
         <div style={{ 
             background: 'var(--bg-card)', 

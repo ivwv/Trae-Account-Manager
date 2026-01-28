@@ -11,6 +11,7 @@ interface ContextMenuProps {
   onCopyToken: () => void;
   onSwitchAccount: () => void;
   onClaimGift: () => void;
+  onBuyPro: () => void;
   onDelete: () => void;
   isCurrent?: boolean; // 是否是当前使用的账号
 }
@@ -26,6 +27,7 @@ export function ContextMenu({
   onCopyToken,
   onSwitchAccount,
   onClaimGift,
+  onBuyPro,
   onDelete,
   isCurrent = false,
 }: ContextMenuProps) {
@@ -84,6 +86,10 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={onClaimGift}>
           <span className="icon">🎁</span>
           获取礼包
+        </div>
+        <div className="context-menu-item" onClick={onBuyPro}>
+          <span className="icon">🛒</span>
+          购买 Pro
         </div>
         <div className="context-menu-divider" />
         <div className="context-menu-item danger" onClick={onDelete}>

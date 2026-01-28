@@ -224,3 +224,8 @@ export async function claimGift(accountId: string): Promise<void> {
 export async function getUserStatistics(accountId: string): Promise<UserStatisticData> {
   return invoke("get_user_statistics", { accountId });
 }
+
+// 打开购买页面（内置浏览器，携带账号 Cookies）
+export async function openPricing(accountId: string): Promise<void> {
+  return invoke("open_pricing", { accountId });
+}

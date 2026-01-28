@@ -495,6 +495,15 @@ function App() {
     });
   };
 
+  const handleBuyPro = async (accountId: string) => {
+    try {
+      await api.openPricing(accountId);
+      addToast("info", "已打开购买页面");
+    } catch (err: any) {
+      addToast("error", err.message || "打开购买页面失败");
+    }
+  };
+
   // 导出账号
   const handleExportAccounts = async () => {
     try {
@@ -841,6 +850,10 @@ function App() {
           }}
           onClaimGift={() => {
             handleClaimGift(contextMenu.accountId);
+            setContextMenu(null);
+          }}
+          onBuyPro={() => {
+            void handleBuyPro(contextMenu.accountId);
             setContextMenu(null);
           }}
           onDelete={() => {

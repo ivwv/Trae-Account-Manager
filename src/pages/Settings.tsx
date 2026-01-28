@@ -170,153 +170,193 @@ export function Settings({
     <div className="settings-page">
       {/* Trae IDE 设置 */}
       <div className="settings-section">
-        <h3>Trae IDE</h3>
-        <div className="machine-id-card trae-card" style={{ marginBottom: '20px' }}>
-          <div className="machine-id-header">
-            <div className="machine-id-icon trae-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-              </svg>
+        <h3>Trae IDE 配置</h3>
+        
+        {/* Machine ID */}
+        <div className="setting-item" style={{ alignItems: 'flex-start' }}>
+          <div className="setting-info" style={{ flex: 1, overflow: 'hidden' }}>
+            <div className="setting-label">
+              Machine ID
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '2px 6px', 
+                background: 'var(--bg-hover)', 
+                borderRadius: '4px', 
+                marginLeft: '8px', 
+                color: 'var(--text-muted)',
+                fontWeight: 'normal'
+              }}>客户端唯一标识</span>
             </div>
-            <div className="machine-id-title">
-              <span>Trae IDE MachineId</span>
-              <span className="machine-id-subtitle">Trae IDE 客户端唯一标识符</span>
+             <div style={{ position: 'relative', marginTop: '8px' }}>
+              <div style={{ 
+                padding: '10px 12px', 
+                paddingRight: '80px',
+                background: 'var(--bg-secondary)', 
+                borderRadius: '8px', 
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '14px',
+                fontWeight: '500',
+                border: '1px solid var(--border)',
+                width: '100%',
+                wordBreak: 'break-all',
+                color: 'var(--text-primary)',
+                minHeight: '42px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                {traeRefreshing ? "加载中..." : traeMachineId}
+              </div>
+              <div style={{ position: 'absolute', right: '4px', top: '4px', display: 'flex', gap: '4px' }}>
+                 <button
+                  onClick={loadTraeMachineId}
+                  disabled={traeRefreshing}
+                  title="刷新"
+                  style={{
+                    padding: '6px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+                <button
+                  onClick={handleCopyTraeMachineId}
+                  disabled={!traeMachineId || traeRefreshing || traeMachineId === "未找到"}
+                  title="复制"
+                  style={{
+                    padding: '6px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+            <div className="setting-desc" style={{ marginTop: '8px', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+              <span>清除登录状态会重置机器码，需重新登录 Trae IDE</span>
             </div>
           </div>
-          <div className="machine-id-value">
-            <code>{traeRefreshing ? "加载中..." : traeMachineId}</code>
-          </div>
-          <div className="machine-id-actions">
+          <div className="setting-action" style={{ display: 'flex', alignItems: 'flex-start', paddingTop: '32px', marginLeft: '16px' }}>
             <button
-              className="machine-id-btn"
-              onClick={loadTraeMachineId}
-              disabled={traeRefreshing}
-              title="刷新"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-              刷新
-            </button>
-            <button
-              className="machine-id-btn"
-              onClick={handleCopyTraeMachineId}
-              disabled={!traeMachineId || traeRefreshing || traeMachineId === "未找到"}
-              title="复制"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-              复制
-            </button>
-            <button
-              className="machine-id-btn danger"
+              className="setting-btn danger"
               onClick={handleClearTraeLoginState}
               disabled={clearingTrae || traeRefreshing}
-              title="清除登录状态"
+              style={{ whiteSpace: 'nowrap' }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                <line x1="10" y1="11" x2="10" y2="17"/>
-                <line x1="14" y1="11" x2="14" y2="17"/>
-              </svg>
               {clearingTrae ? "清除中..." : "清除登录状态"}
             </button>
-          </div>
-          <div className="machine-id-tip warning">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span>清除登录状态会重置机器码并删除所有登录信息，Trae IDE 将需要重新登录。请先关闭 Trae IDE。</span>
           </div>
         </div>
 
         {/* Trae IDE 路径 */}
-        <div className="machine-id-card trae-card">
-          <div className="machine-id-header">
-            <div className="machine-id-icon trae-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>
+        <div className="setting-item" style={{ alignItems: 'flex-start' }}>
+          <div className="setting-info" style={{ flex: 1 }}>
+            <div className="setting-label">安装路径</div>
+             <div style={{ position: 'relative', marginTop: '8px' }}>
+               <div style={{ 
+                padding: '10px 12px', 
+                paddingRight: '40px', 
+                background: 'var(--bg-secondary)', 
+                borderRadius: '8px', 
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '14px',
+                fontWeight: '500',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                wordBreak: 'break-all',
+                minHeight: '42px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                {traePathLoading ? "加载中..." : (traePath || "未设置")}
+              </div>
+               <div style={{ position: 'absolute', right: '4px', top: '4px', display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={handleSetTraePath}
+                  title="手动设置"
+                  style={{
+                    padding: '6px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </div>
             </div>
-            <div className="machine-id-title">
-              <span>Trae IDE 安装路径</span>
-              <span className="machine-id-subtitle">用于自动打开 Trae IDE</span>
+            <div className="setting-desc" style={{ marginTop: '4px' }}>
+              切换账号后会自动打开 Trae IDE
             </div>
           </div>
-          <div className="machine-id-value">
-            <code>{traePathLoading ? "加载中..." : (traePath || "未设置")}</code>
-          </div>
-          <div className="machine-id-actions">
-            <button
-              className="machine-id-btn"
-              onClick={handleScanTraePath}
-              disabled={scanning}
-              title="自动扫描"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-              </svg>
-              {scanning ? "扫描中..." : "自动扫描"}
-            </button>
-            <button
-              className="machine-id-btn"
-              onClick={handleSetTraePath}
-              title="手动设置"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              手动设置
-            </button>
-          </div>
-          <div className="machine-id-tip">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4"/>
-              <path d="M12 8h.01"/>
-            </svg>
-            <span>切换账号后会自动打开 Trae IDE。如果自动扫描找不到，请手动设置 Trae.exe 的完整路径。</span>
+          <div className="setting-action" style={{ display: 'flex', alignItems: 'flex-start', paddingTop: '32px', marginLeft: '16px' }}>
+             <button
+               className="setting-btn"
+               onClick={handleScanTraePath}
+               disabled={scanning}
+               style={{ whiteSpace: 'nowrap' }}
+             >
+               {scanning ? "扫描中..." : "自动扫描"}
+             </button>
           </div>
         </div>
 
         {/* 自动开启隐私模式 */}
-        <div className="machine-id-card trae-card" style={{ marginTop: '20px' }}>
-          <div className="setting-item" style={{ borderBottom: 'none', padding: 0 }}>
-            <div className="setting-info">
-              <div className="setting-label">
-                自动开启隐私模式
-                <button type="button" className="setting-help" onClick={handlePrivacyHelp}>
-                  ?
-                </button>
-              </div>
-              <div className="setting-desc">切换账号后自动开启 Trae 隐私模式，Trae将额外重启一次用来应用配置</div>
-            </div>
-            <div className="setting-action">
-              <button
-                type="button"
-                className={`pill-toggle ${currentSettings.privacy_auto_enable ? "on" : ""}`}
-                onClick={() =>
-                  updateSettings(
-                    { privacy_auto_enable: !currentSettings.privacy_auto_enable },
-                    "已更新隐私模式设置"
-                  )
-                }
-                disabled={settingsDisabled}
-                role="switch"
-                aria-checked={currentSettings.privacy_auto_enable}
-              >
-                <span className="pill-track"></span>
-                <span className="pill-thumb"></span>
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-label">
+              自动开启隐私模式
+              <button type="button" className="setting-help" onClick={handlePrivacyHelp} style={{ marginLeft: '6px' }}>
+                ?
               </button>
             </div>
+            <div className="setting-desc">切换账号后自动开启 Trae 隐私模式（需重启生效）</div>
+          </div>
+          <div className="setting-action">
+            <button
+              type="button"
+              className={`pill-toggle ${currentSettings.privacy_auto_enable ? "on" : ""}`}
+              onClick={() =>
+                updateSettings(
+                  { privacy_auto_enable: !currentSettings.privacy_auto_enable },
+                  "已更新隐私模式设置"
+                )
+              }
+              disabled={settingsDisabled}
+              role="switch"
+              aria-checked={currentSettings.privacy_auto_enable}
+            >
+              <span className="pill-track"></span>
+              <span className="pill-thumb"></span>
+            </button>
           </div>
         </div>
       </div>

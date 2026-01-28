@@ -361,6 +361,12 @@ body {
   font-size: 24px;
 }
 
+.logo-icon-img {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
 .logo-text {
   font-size: 20px;
   font-weight: 700;
@@ -998,15 +1004,15 @@ body {
 }
 
 .usage-bar-fill.low {
-  background: linear-gradient(90deg, var(--success), var(--success-light));
+  background: var(--success);
 }
 
 .usage-bar-fill.medium {
-  background: linear-gradient(90deg, var(--warning), var(--warning-light));
+  background: var(--warning);
 }
 
 .usage-bar-fill.high {
-  background: linear-gradient(90deg, var(--danger), var(--danger-light));
+  background: var(--danger);
 }
 
 .usage-numbers {
@@ -2488,8 +2494,10 @@ body {
 }
 
 .about-logo {
-  font-size: 64px;
+  width: 64px;
+  height: 64px;
   margin-bottom: 16px;
+  display: block;
 }
 
 .about-card h3 {
@@ -2526,14 +2534,63 @@ body {
   color: var(--text-primary);
 }
 
-.feature-list {
-  list-style: none;
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.feature-list li {
-  padding: 8px 0;
-  font-size: 14px;
-  color: var(--text-secondary);
+.feature-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all var(--transition);
+}
+
+.feature-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-secondary);
+}
+
+.feature-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transition: all var(--transition);
+}
+
+.feature-card:hover .feature-icon-wrapper {
+  background: var(--accent);
+  color: var(--text-inverse);
+  transform: scale(1.1);
+}
+
+.feature-icon-wrapper svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.feature-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0;
+  line-height: 1.4;
 }
 
 .tech-tags {
@@ -3882,8 +3939,8 @@ body {
   left: 0;
   top: 0;
   bottom: 0;
-  background: var(--bg-active);
-  opacity: 0.8;
+  background: var(--accent);
+  opacity: 0.6;
   border-radius: 4px;
 }
 

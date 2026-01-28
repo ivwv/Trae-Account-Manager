@@ -67,6 +67,14 @@ export function AddAccountModal({
           handleClose();
         } catch (err: any) {
           if (browserRunRef.current !== runId) return;
+          
+          if (err.message && err.message.includes("浏览器被主动关闭")) {
+            setBrowserStarted(false);
+            setBrowserWaiting(false);
+            onToast?.("error", "导入失败,浏览器被主动关闭");
+            return;
+          }
+
           setError(err.message || "等待浏览器登录失败");
         } finally {
           if (browserRunRef.current === runId) {

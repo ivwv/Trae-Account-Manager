@@ -81,6 +81,7 @@ struct BrowserLoginSession {
     receiver: oneshot::Receiver<String>,
     shutdown: Arc<StdMutex<Option<oneshot::Sender<()>>>>,
     cancel: oneshot::Receiver<()>,
+    window_close: oneshot::Receiver<()>,
     webview: WebviewWindow,
 }
 
@@ -888,8 +889,10 @@ async fn start_browser_login(app: AppHandle, state: State<'_, AppState>) -> Resu
     let (token_tx, token_rx) = oneshot::channel::<String>();
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     let (cancel_tx, cancel_rx) = oneshot::channel::<()>();
+    let (window_close_tx, window_close_rx) = oneshot::channel::<()>();
     let token_sender = Arc::new(StdMutex::new(Some(token_tx)));
     let shutdown_sender = Arc::new(StdMutex::new(Some(shutdown_tx)));
+    let window_close_sender = Arc::new(StdMutex::new(Some(window_close_tx)));
 
     let token_sender_route = token_sender.clone();
     let shutdown_sender_route = shutdown_sender.clone();
@@ -947,6 +950,15 @@ async fn start_browser_login(app: AppHandle, state: State<'_, AppState>) -> Resu
         .build()
         .map_err(|e| anyhow::anyhow!("无法打开登录窗口: {}", e))?;
 
+    let window_close_sender_clone = window_close_sender.clone();
+    webview.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            if let Some(tx) = window_close_sender_clone.lock().unwrap().take() {
+                let _ = tx.send(());
+            }
+        }
+    });
+
     if let Err(e) = webview.clear_all_browsing_data() {
         println!("[browser-login] clear browsing data failed: {}", e);
     } else {
@@ -961,6 +973,7 @@ async fn start_browser_login(app: AppHandle, state: State<'_, AppState>) -> Resu
         receiver: token_rx,
         shutdown: shutdown_sender,
         cancel: cancel_rx,
+        window_close: window_close_rx,
         webview,
     });
     *state.browser_login_cancel.lock().await = Some(cancel_tx);
@@ -997,6 +1010,13 @@ async fn finish_browser_login(state: State<'_, AppState>) -> Result<Account> {
             }
             let _ = session.webview.close();
             return Err(anyhow::anyhow!("浏览器登录已取消").into());
+        }
+        _ = session.window_close => {
+            let _ = state.browser_login_cancel.lock().await.take();
+            if let Some(tx) = session.shutdown.lock().unwrap().take() {
+                let _ = tx.send(());
+            }
+            return Err(anyhow::anyhow!("浏览器被主动关闭").into());
         }
         _ = tokio::time::sleep(Duration::from_secs(300)) => {
             let _ = state.browser_login_cancel.lock().await.take();
@@ -1357,6 +1377,75 @@ async fn claim_gift(account_id: String, state: State<'_, AppState>) -> Result<()
     manager.claim_birthday_bonus(&account_id).await.map_err(ApiError::from)
 }
 
+/// 打开购买页面（内置浏览器，携带账号 Cookies）
+#[tauri::command]
+async fn open_pricing(account_id: String, app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+    let account = {
+        let manager = state.account_manager.lock().await;
+        manager.get_account(&account_id).map_err(ApiError::from)?
+    };
+
+    if let Some(existing) = app.get_webview_window("trae-pricing") {
+        let _ = existing.close();
+    }
+
+    let cookies = account.cookies.clone();
+    let cookies_for_js = cookies.replace('\\', "\\\\").replace('`', "\\`");
+    let js_onload = format!(
+        r#"
+(() => {{
+  try {{
+    if (!location.hostname.endsWith('trae.ai')) return;
+    if (sessionStorage.getItem('trae_auth_injected')) return;
+
+    const raw = `{cookies}`;
+    const parts = raw ? raw.split(';').map(s => s.trim()).filter(Boolean) : [];
+    const seen = new Set();
+    for (const kv of parts) {{
+      const idx = kv.indexOf('=');
+      if (idx <= 0) continue;
+      const name = kv.slice(0, idx);
+      const value = kv.slice(idx + 1);
+      if (seen.has(name)) continue;
+      seen.add(name);
+      document.cookie = `${{name}}=${{value}}; path=/; domain=.trae.ai; secure; samesite=lax`;
+    }}
+    if (!raw.includes('store-idc=') && !raw.includes('trae-target-idc=')) {{
+      document.cookie = `store-idc=alisg; path=/; domain=.trae.ai; secure; samesite=lax`;
+    }}
+    
+    sessionStorage.setItem('trae_auth_injected', 'true');
+    location.reload();
+  }} catch (e) {{
+    console.error('[pricing] cookie inject error', e);
+  }}
+}})();
+"#,
+        cookies = cookies_for_js
+    );
+
+    let script_onload = js_onload.clone();
+    let webview = WebviewWindowBuilder::new(
+        &app,
+        "trae-pricing",
+        WebviewUrl::External("about:blank".parse().unwrap()),
+    )
+    .title("Trae 购买 Pro")
+    .inner_size(1000.0, 720.0)
+    .on_page_load(move |window, payload| {
+        if payload.event() == PageLoadEvent::Finished {
+            let _ = window.eval(script_onload.clone());
+        }
+    })
+    .build()
+    .map_err(|e| anyhow::anyhow!("无法打开购买窗口: {}", e))?;
+
+    let _ = webview.clear_all_browsing_data();
+    let _ = webview.navigate(Url::parse("https://www.trae.ai/pricing").unwrap());
+    let _ = webview.set_focus();
+    Ok(())
+}
+
 /// 获取用户统计数据
 #[tauri::command]
 async fn get_user_statistics(account_id: String, state: State<'_, AppState>) -> Result<UserStatisticResult> {
@@ -1418,6 +1507,7 @@ pub fn run() {
             scan_trae_path,
             claim_gift,
             get_user_statistics,
+            open_pricing,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
