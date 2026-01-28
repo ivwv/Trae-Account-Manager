@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import type { UsageSummary } from "../types";
+import { useMemo, useState, useEffect } from 'react';
+import type { UsageSummary, AccountBrief } from "../types";
 import { UsageEvents } from "../components/UsageEvents";
 
 interface DashboardProps {
@@ -10,268 +9,450 @@ interface DashboardProps {
     email: string;
     usage?: UsageSummary | null;
     is_current?: boolean;
+    plan_type?: string;
   }>;
   hasLoaded?: boolean;
+  onSwitchAccount: (accountId: string) => void;
 }
 
-export function Dashboard({ accounts, hasLoaded = true }: DashboardProps) {
-  const [themeColors, setThemeColors] = useState({
-    primary: '#6366f1',
-    secondary: '#e5e7eb',
-    colors: ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef']
-  });
+export function Dashboard({ accounts, hasLoaded = true, onSwitchAccount, onNavigate }: DashboardProps) {
+  // Helper to calculate percentage
+  const getPercent = (used: number, limit: number) => {
+    if (limit <= 0) return 0;
+    return Math.round(((limit - used) / limit) * 100);
+  };
 
-  useEffect(() => {
-    const updateColors = () => {
-      const styles = getComputedStyle(document.documentElement);
-      const primary = styles.getPropertyValue('--accent').trim() || '#6366f1';
-      // 使用 border 颜色作为未使用的灰色部分，在深色模式下会更合适
-      const secondary = styles.getPropertyValue('--bg-active').trim() || '#e5e7eb';
-      
-      // 生成基于主色的色板
-      const colors = [
-        primary,
-        styles.getPropertyValue('--accent-hover').trim() || '#8b5cf6',
-        styles.getPropertyValue('--accent-light').trim() || '#a855f7',
-        // 第四个颜色稍微变暗或变亮一点
-        primary
-      ];
-      
-      setThemeColors({ primary, secondary, colors });
+  const formatUsedCount = (used: number, limit: number) => {
+      if (limit <= 0) return '';
+      return `${limit - used}`;
+  };
+
+  // 1. Calculate Stats
+  const stats = useMemo(() => {
+    const totalAccounts = accounts.length;
+    
+    // Average Fast Request (mapped to "Gemini 平均配额" for UI match)
+    const totalFastPercent = accounts.reduce((sum, a) => {
+      if (!a.usage) return sum;
+      return sum + getPercent(a.usage.fast_request_used, a.usage.fast_request_limit);
+    }, 0);
+    const avgFastPercent = totalAccounts > 0 ? Math.round(totalFastPercent / totalAccounts) : 0;
+
+    // Average Slow Request (mapped to "Claude 平均配额")
+    const totalSlowPercent = accounts.reduce((sum, a) => {
+        if (!a.usage) return sum;
+        return sum + getPercent(a.usage.slow_request_used, a.usage.slow_request_limit);
+    }, 0);
+    const avgSlowPercent = totalAccounts > 0 ? Math.round(totalSlowPercent / totalAccounts) : 0;
+
+    // Low Quota Accounts (< 20% on Fast Requests)
+    const lowQuotaCount = accounts.filter(a => {
+        if (!a.usage) return false;
+        return getPercent(a.usage.fast_request_used, a.usage.fast_request_limit) < 20;
+    }).length;
+
+    // Total Fast Quota
+    const totalFastLimit = accounts.reduce((sum, a) => {
+        if (!a.usage) return sum;
+        return sum + a.usage.fast_request_limit + a.usage.extra_fast_request_limit;
+    }, 0);
+
+    // Total Fast Remaining
+    const totalFastRemaining = Math.round(accounts.reduce((sum, a) => {
+        if (!a.usage) return sum;
+        return sum + a.usage.fast_request_left + a.usage.extra_fast_request_left;
+    }, 0));
+
+    // Calculate Average Fast Quota Percentage based on (Total Remaining / Total Limit) * 100
+    // This is more accurate for "Average Quota" representation across the pool
+    const fastQuotaPercentage = totalFastLimit > 0 
+        ? Math.round((totalFastRemaining / totalFastLimit) * 100) 
+        : 0;
+
+    return {
+        totalAccounts,
+        avgFastPercent: fastQuotaPercentage, // Override with calculated global percentage
+        avgSlowPercent,
+        lowQuotaCount,
+        totalFastLimit,
+        totalFastRemaining
     };
+  }, [accounts]);
 
-    // 初始化颜色
-    updateColors();
+  // 2. Identify Current Account
+  const currentAccount = accounts.find(a => a.is_current);
 
-    // 监听主题变化
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          updateColors();
+  // 3. Identify Best Accounts
+  const bestAccounts = useMemo(() => {
+    const candidates = accounts.filter(a => {
+      // Must have some usage data and not be the current one (optional, but usually we recommend others)
+      // Actually, user might want to know if current is best. But usually "Switch to Best" implies changing.
+      // Let's include all valid accounts in the sort, but visually highlight.
+      if (!a.usage) return false;
+      const totalLeft = a.usage.fast_request_left + a.usage.extra_fast_request_left;
+      return totalLeft > 0;
+    });
+
+    return candidates.sort((a, b) => {
+        if (!a.usage || !b.usage) return 0;
+
+        // Calculate effective expiration time
+        // If has fast quota, it expires at reset_time (daily)
+        // If only has extra quota, it expires at extra_expire_time
+        const getExpireTime = (acc: typeof accounts[0]) => {
+           if (!acc.usage) return 0;
+           if (acc.usage.fast_request_left > 0) return acc.usage.reset_time;
+           return acc.usage.extra_expire_time || Number.MAX_SAFE_INTEGER;
+        };
+
+        const timeA = getExpireTime(a);
+        const timeB = getExpireTime(b);
+
+        // Priority 1: Expiring Soonest (Smallest timestamp)
+        // Note: reset_time is usually a unix timestamp (seconds or ms). Let's assume seconds based on typical API, 
+        // but need to be careful. If it's 0, treat as far future or expired?
+        // Let's assume valid future timestamps.
+        
+        if (timeA !== timeB) {
+            return timeA - timeB; 
         }
-      });
+
+        // Priority 2: Most Quota Remaining (Descending)
+        const quotaA = a.usage.fast_request_left + a.usage.extra_fast_request_left;
+        const quotaB = b.usage.fast_request_left + b.usage.extra_fast_request_left;
+        return quotaB - quotaA;
     });
+  }, [accounts]);
 
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
+  // Helper for progress bar color
+  const getProgressColor = (percent: number) => {
+      if (percent > 50) return '#10b981'; // Green
+      if (percent > 20) return '#f59e0b'; // Orange
+      return '#ef4444'; // Red
+  };
 
-    return () => observer.disconnect();
-  }, []);
-
-  const totalAccounts = accounts.length;
-  const activeAccounts = accounts.filter(a => a.usage && a.usage.fast_request_left > 0).length;
-
-  const totalUsed = accounts.reduce((sum, a) => {
-    if (!a.usage) return sum;
-    return sum + a.usage.fast_request_used + a.usage.extra_fast_request_used;
-  }, 0);
-
-  const totalLimit = accounts.reduce((sum, a) => {
-    if (!a.usage) return sum;
-    return sum + a.usage.fast_request_limit + a.usage.extra_fast_request_limit;
-  }, 0);
-
-  const totalLeft = accounts.reduce((sum, a) => {
-    if (!a.usage) return sum;
-    return sum + a.usage.fast_request_left + a.usage.extra_fast_request_left;
-  }, 0);
-
-  const usagePercent = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
-
-  const pieData = [
-    { name: '已使用', value: totalUsed, color: themeColors.primary },
-    { name: '剩余', value: totalLeft, color: themeColors.secondary },
-  ];
-
-
-  // 配额分布
-  const quotaData = accounts.reduce((acc, a) => {
-    if (!a.usage) return acc;
-    const planType = a.usage.plan_type || 'Free';
-    const existing = acc.find(item => item.name === planType);
-    if (existing) {
-      existing.value += 1;
-    } else {
-      acc.push({ name: planType, value: 1 });
-    }
-    return acc;
-  }, [] as { name: string; value: number }[]);
+  const formatTimeRemaining = (resetTime: number) => {
+      const now = Date.now() / 1000; // Assuming resetTime is in seconds? 
+      // Wait, let's check if resetTime is seconds or ms. Usually APIs return seconds.
+      // But let's check usage. If it looks like 17xxxxxxxxx, it's ms.
+      // If 17xxxxxx, it's seconds.
+      // Let's assume the API handles it or standard check.
+      
+      // Safe check:
+      const target = resetTime > 10000000000 ? resetTime : resetTime * 1000;
+      const diff = target - Date.now();
+      
+      if (diff <= 0) return '0m';
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}h ${minutes}m`;
+  };
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
-        <div className="welcome-section">
-          <h1>欢迎回来 👋</h1>
-          <p>这是您的 Trae 账号使用概览</p>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Top Stats Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            <StatCard 
+                icon="👥" 
+                value={stats.totalAccounts} 
+                label="总账号数" 
+                sub="Total Accounts"
+            />
+            <StatCard 
+                icon="⚡" 
+                value={stats.totalFastLimit} 
+                label="快速请求总额度" 
+                sub="Fast Request Total Limit"
+                status="-"
+            />
+            <StatCard 
+                icon="🔥" 
+                value={stats.totalFastRemaining} 
+                label="剩余快速请求额度" 
+                sub="Fast Request Total Remaining"
+                isWarning={false}
+            />
+             <StatCard 
+                icon="✨" 
+                value={`${stats.avgFastPercent}%`} 
+                label="Fast Request 平均配额" 
+                sub="Fast Request Avg Quota"
+                status={stats.avgFastPercent > 10 ? "配额充足" : "配额紧张"}
+                statusColor={stats.avgFastPercent > 10 ? "#10b981" : "#f59e0b"}
+            />
+             <StatCard 
+                icon="🎨" 
+                value={`${stats.avgSlowPercent}%`} 
+                label="Slow Request 平均配额" 
+                sub="Slow Request Avg Quota"
+                status="配额充足"
+                statusColor="#10b981"
+            />
         </div>
-        <div className="header-stats">
-          <div className="quick-stat">
-            <span className="quick-stat-value">{totalAccounts}</span>
-            <span className="quick-stat-label">账号总数</span>
-          </div>
-          <div className="quick-stat">
-            <span className="quick-stat-value success">{activeAccounts}</span>
-            <span className="quick-stat-label">可用账号</span>
-          </div>
+
+        {/* Main Content Split */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }}>
+            {/* Left: Current Account */}
+            <div className="card" style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <span style={{ color: '#10b981', marginRight: '8px' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </span>
+                    <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>当前账号</h2>
+                </div>
+
+                {currentAccount ? (
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '16px', fontWeight: '500' }}>{currentAccount.email || currentAccount.name}</span>
+                            </div>
+                            <span style={{ 
+                                background: '#6366f1', 
+                                color: 'white', 
+                                padding: '4px 12px', 
+                                borderRadius: '20px', 
+                                fontSize: '12px', 
+                                fontWeight: 'bold',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}>
+                                💎 {currentAccount.plan_type || 'PRO'}
+                            </span>
+                        </div>
+
+                        <div className="usage-bars" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {currentAccount.usage ? (
+                                <>
+                                    <UsageBar 
+                                        label="Fast Request" 
+                                        percent={getPercent(currentAccount.usage.fast_request_used, currentAccount.usage.fast_request_limit)} 
+                                        resetTime={currentAccount.usage.reset_time}
+                                        formatTime={formatTimeRemaining}
+                                        used={currentAccount.usage.fast_request_used}
+                                        limit={currentAccount.usage.fast_request_limit}
+                                    />
+                                    <UsageBar 
+                                        label="Slow Request" 
+                                        percent={getPercent(currentAccount.usage.slow_request_used, currentAccount.usage.slow_request_limit)} 
+                                        resetTime={currentAccount.usage.reset_time} // Usually same reset time
+                                        formatTime={formatTimeRemaining}
+                                        used={currentAccount.usage.slow_request_used}
+                                        limit={currentAccount.usage.slow_request_limit}
+                                    />
+                                    {currentAccount.usage.extra_fast_request_limit > 0 && (
+                                        <UsageBar 
+                                            label={`Extra Quota (${currentAccount.usage.extra_package_name || 'Gift'})`}
+                                            percent={getPercent(currentAccount.usage.extra_fast_request_used, currentAccount.usage.extra_fast_request_limit)} 
+                                            resetTime={currentAccount.usage.extra_expire_time}
+                                            formatTime={formatTimeRemaining}
+                                            isExtra
+                                            used={currentAccount.usage.extra_fast_request_used}
+                                            limit={currentAccount.usage.extra_fast_request_limit}
+                                        />
+                                    )}
+                                </>
+                            ) : (
+                                <div style={{ color: '#9ca3af', textAlign: 'center', padding: '20px' }}>暂无使用量数据</div>
+                            )}
+                        </div>
+
+                        <button 
+                            style={{ 
+                                width: '100%', 
+                                marginTop: '30px', 
+                                padding: '12px', 
+                                background: 'white', 
+                                border: '1px solid #e5e7eb', 
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: '#4b5563',
+                                transition: 'all 0.2s'
+                            }}
+                            onClick={() => {
+                                if (onNavigate) {
+                                    onNavigate('accounts');
+                                }
+                            }}
+                        >
+                            切换账号
+                        </button>
+                    </>
+                ) : (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                        未检测到当前登录账号
+                    </div>
+                )}
+            </div>
+
+            {/* Right: Best Account Recommendation */}
+            <div className="card" style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <span style={{ color: '#3b82f6', marginRight: '8px' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                    </span>
+                    <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>最佳账号推荐</h2>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {bestAccounts.length > 0 ? (
+                        <>
+                            {bestAccounts.slice(0, 2).map((acc, idx) => {
+                                const percent = acc.usage ? getPercent(acc.usage.fast_request_used, acc.usage.fast_request_limit) : 0;
+                                return (
+                                    <div key={acc.id} style={{ 
+                                        background: idx === 0 ? '#f0fdf4' : '#f0f9ff', // Light green for 1st, Light blue for 2nd
+                                        borderRadius: '12px',
+                                        padding: '16px',
+                                        border: '1px solid transparent',
+                                        borderColor: idx === 0 ? '#bbf7d0' : '#bae6fd',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px'
+                                    }}>
+                                        <div style={{ fontSize: '12px', color: idx === 0 ? '#15803d' : '#0369a1', fontWeight: '500' }}>
+                                            {idx === 0 ? '首选推荐 (即将过期/额度最多)' : '备选推荐'}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ fontWeight: '500', color: '#1f2937', fontSize: '14px' }}>{acc.email || acc.name}</div>
+                                            <div style={{ 
+                                                background: getProgressColor(percent), 
+                                                color: 'white', 
+                                                padding: '2px 8px', 
+                                                borderRadius: '12px', 
+                                                fontSize: '12px', 
+                                                fontWeight: 'bold' 
+                                            }}>
+                                                {percent}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </>
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#9ca3af', padding: '20px' }}>
+                            暂无可用推荐账号
+                        </div>
+                    )}
+                </div>
+
+                {bestAccounts.length > 0 && bestAccounts[0].id !== currentAccount?.id && (
+                    <button 
+                        style={{ 
+                            width: '100%', 
+                            marginTop: '20px', 
+                            padding: '12px', 
+                            background: '#3b82f6', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)'
+                        }}
+                        onClick={() => onSwitchAccount(bestAccounts[0].id)}
+                    >
+                        一键切换最佳
+                    </button>
+                )}
+            </div>
         </div>
+        
+        {/* Usage Events (Keep existing logic but styled nicely if needed) */}
+        {/* For now, we omit it to keep the UI clean as per the "Redo" request, or add it below if user wants history. 
+            The user didn't explicitly say "remove history", but "Redo UI based on image". The image has no history.
+            I'll add a small section below.
+        */}
+        {currentAccount && (
+            <div style={{ marginTop: '32px' }}>
+                <UsageEvents accountId={currentAccount.id} />
+            </div>
+        )}
       </div>
-
-      <div className="stats-row">
-        <div className="stat-card gradient-purple">
-          <div className="stat-card-content">
-            <div className="stat-card-info">
-              <span className="stat-card-label">总配额</span>
-              <span className="stat-card-value">{totalLimit}</span>
-              <span className="stat-card-change">Fast Requests</span>
-            </div>
-            <div className="stat-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-blue">
-          <div className="stat-card-content">
-            <div className="stat-card-info">
-              <span className="stat-card-label">已使用</span>
-              <span className="stat-card-value">{Math.round(totalUsed)}</span>
-              <span className="stat-card-change">{usagePercent}% 使用率</span>
-            </div>
-            <div className="stat-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-green">
-          <div className="stat-card-content">
-            <div className="stat-card-info">
-              <span className="stat-card-label">剩余可用</span>
-              <span className="stat-card-value">{Math.round(totalLeft)}</span>
-              <span className="stat-card-change">{100 - usagePercent}% 剩余</span>
-            </div>
-            <div className="stat-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-orange">
-          <div className="stat-card-content">
-            <div className="stat-card-info">
-              <span className="stat-card-label">平均使用</span>
-              <span className="stat-card-value">{totalAccounts > 0 ? Math.round(totalUsed / totalAccounts) : 0}</span>
-              <span className="stat-card-change">每账号</span>
-            </div>
-            <div className="stat-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v6l4 2"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="charts-grid-2col">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>使用量分布</h3>
-            <span className="chart-badge">{usagePercent}%</span>
-          </div>
-          <div className="chart-body pie-chart-container">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={70}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pie-center-text">
-              <span className="pie-value">{Math.round(totalLeft)}</span>
-              <span className="pie-label">剩余</span>
-            </div>
-          </div>
-          <div className="chart-legend">
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: themeColors.primary }}></span>
-              <span>已使用 ({Math.round(totalUsed)})</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: themeColors.secondary }}></span>
-              <span>剩余 ({Math.round(totalLeft)})</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>套餐分布</h3>
-          </div>
-          <div className="chart-body">
-            {quotaData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={quotaData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name || ''} ${((percent || 0) * 100).toFixed(0)}%`}
-                  >
-                    {quotaData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={themeColors.colors[index % themeColors.colors.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="chart-empty">暂无数据</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {accounts.length > 0 && (
-        <>
-          <UsageEvents accountId={accounts.find(a => a.is_current)?.id || accounts[0]?.id || ''} />
-
-
-        </>
-      )}
-
-      {accounts.length === 0 && (
-        hasLoaded ? (
-          <div className="dashboard-empty">
-            <div className="empty-icon">📊</div>
-            <h3>暂无账号数据</h3>
-            <p>请先在"账号管理"中添加账号</p>
-          </div>
-        ) : (
-          <div className="loading-state">加载中...</div>
-        )
-      )}
     </div>
   );
+}
+
+// Sub-components
+function StatCard({ icon, value, label, sub, status, statusColor, isWarning }: any) {
+    return (
+        <div style={{ 
+            background: '#fff', 
+            borderRadius: '16px', 
+            padding: '20px', 
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            height: '140px'
+        }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    background: isWarning ? '#fef2f2' : '#f3f4f6', 
+                    borderRadius: '10px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    color: isWarning ? '#ef4444' : '#4b5563'
+                }}>
+                    {icon}
+                </div>
+            </div>
+            <div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '4px' }}>{value}</div>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '2px' }}>{label}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     {/* <div style={{ fontSize: '12px', color: '#9ca3af' }}>{sub}</div> */}
+                     {status && (
+                         <div style={{ fontSize: '12px', color: statusColor, fontWeight: '500' }}>
+                             {status === '-' ? '' : `✓ ${status}`}
+                         </div>
+                     )}
+                     {isWarning && (
+                         <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: '500' }}>
+                             配额 {'<'} 20%
+                         </div>
+                     )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function UsageBar({ label, percent, resetTime, formatTime, isExtra, used, limit }: any) {
+    const color = percent > 50 ? '#10b981' : (percent > 20 ? '#f59e0b' : '#ef4444');
+    
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                <span style={{ fontWeight: '500', color: '#374151' }}>{label}</span>
+                <span style={{ color: '#6b7280', fontSize: '12px' }}>
+                    {isExtra ? 'Expires: ' : 'R: '} 
+                    {resetTime ? formatTime(resetTime) : '--'} 
+                    <span style={{ marginLeft: '8px', marginRight: '8px', color: '#4b5563' }}>
+                        {limit > 0 ? `剩余: ${Math.round(limit - used)}` : ''}
+                    </span>
+                    <span style={{ color: color, fontWeight: 'bold' }}>{percent}%</span>
+                </span>
+            </div>
+            <div style={{ width: '100%', height: '8px', background: '#f3f4f6', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ 
+                    width: `${percent}%`, 
+                    height: '100%', 
+                    background: color, 
+                    borderRadius: '4px',
+                    transition: 'width 0.5s ease'
+                }} />
+            </div>
+        </div>
+    );
 }

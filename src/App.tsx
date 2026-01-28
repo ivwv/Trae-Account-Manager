@@ -594,7 +594,12 @@ function App() {
         )}
 
         {currentPage === "dashboard" && (
-          <Dashboard accounts={accounts} hasLoaded={hasLoaded} />
+          <Dashboard 
+            accounts={accounts} 
+            hasLoaded={hasLoaded} 
+            onSwitchAccount={(id) => handleSwitchAccount(id)}
+            onNavigate={setCurrentPage}
+          />
         )}
 
         {currentPage === "stats" && (
