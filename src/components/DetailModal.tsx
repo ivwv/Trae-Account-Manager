@@ -92,102 +92,280 @@ export function DetailModal({ isOpen, onClose, account, usage, onUpdateCredentia
     }
   };
 
+  const CheckIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  );
+
+  const XIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  );
+
+  const EyeIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  );
+
+  const EyeOffIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
+  );
+
+  const EditHint = () => (
+    <span style={{ 
+      fontSize: '11px', 
+      color: 'var(--text-muted)', 
+      fontWeight: 'normal',
+      marginLeft: '8px',
+      opacity: 0.8,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '2px'
+    }}>
+      (双击编辑)
+    </span>
+  );
+
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
         <h2>账号详情</h2>
 
         <div className="detail-section">
-          <h3>基本信息</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center' }}>
+            基本信息
+            <span style={{ 
+              fontSize: '12px', 
+              color: 'var(--text-muted)', 
+              fontWeight: 'normal',
+              marginLeft: '8px',
+              background: 'var(--bg-hover)',
+              padding: '2px 8px',
+              borderRadius: '4px'
+            }}>
+              双击邮箱或密码可编辑
+            </span>
+          </h3>
           <div className="detail-row">
             <span className="detail-label">用户名</span>
             <span className="detail-value">{account.name}</span>
           </div>
-          <div className="detail-row">
+          <div className="detail-row" style={{ alignItems: 'center' }}>
             <span className="detail-label">邮箱</span>
             <span
               className={`detail-value ${editingField ? "" : "editable"}`}
+              style={{ flex: 1, marginLeft: '12px', textAlign: 'right' }}
               onDoubleClick={() => startEdit("email")}
               title="双击编辑"
             >
               {editingField === "email" ? (
-                <span className="detail-edit">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'flex-end' }}>
                   <input
                     type="text"
                     value={emailDraft}
                     onChange={(event) => setEmailDraft(event.target.value)}
                     onKeyDown={(event) => handleKeyDown(event, "email")}
                     autoFocus
+                    style={{ 
+                      width: '240px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                    }}
                   />
-                  <div className="detail-edit-actions">
+                  <div style={{ display: 'flex', gap: '4px' }}>
                     <button
                       type="button"
-                      className="detail-edit-btn primary"
                       onClick={() => handleSave("email")}
                       disabled={isSaving}
+                      title="保存"
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--success-bg)',
+                        color: 'var(--success)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                         e.currentTarget.style.background = 'var(--success)';
+                         e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                         e.currentTarget.style.background = 'var(--success-bg)';
+                         e.currentTarget.style.color = 'var(--success)';
+                      }}
                     >
-                      保存
+                      <CheckIcon />
                     </button>
                     <button
                       type="button"
-                      className="detail-edit-btn"
                       onClick={cancelEdit}
                       disabled={isSaving}
+                      title="取消"
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--bg-hover)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                         e.currentTarget.style.background = 'var(--bg-active)';
+                         e.currentTarget.style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                         e.currentTarget.style.background = 'var(--bg-hover)';
+                         e.currentTarget.style.color = 'var(--text-secondary)';
+                      }}
                     >
-                      取消
+                      <XIcon />
                     </button>
                   </div>
-                </span>
+                </div>
               ) : (
                 account.email || "-"
               )}
             </span>
           </div>
-          <div className="detail-row">
+          <div className="detail-row" style={{ alignItems: 'center' }}>
             <span className="detail-label">密码</span>
-            <span className="detail-value detail-password">
+            <span className="detail-value detail-password" style={{ flex: 1, marginLeft: '12px' }}>
               {editingField === "password" ? (
-                <span className="detail-edit">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={passwordDraft}
-                    onChange={(event) => setPasswordDraft(event.target.value)}
-                    onKeyDown={(event) => handleKeyDown(event, "password")}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
-                  >
-                    {showPassword ? "🙈" : "👁️"}
-                  </button>
-                  <div className="detail-edit-actions">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'flex-end' }}>
+                  <div style={{ position: 'relative', width: '240px', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={passwordDraft}
+                      onChange={(event) => setPasswordDraft(event.target.value)}
+                      onKeyDown={(event) => handleKeyDown(event, "password")}
+                      autoFocus
+                      style={{ 
+                        width: '100%',
+                        padding: '6px 30px 6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg-input)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                      }}
+                    />
                     <button
                       type="button"
-                      className="detail-edit-btn primary"
-                      onClick={() => handleSave("password")}
-                      disabled={isSaving}
+                      className="password-toggle"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                      style={{ 
+                        position: 'absolute', 
+                        right: '8px', 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        color: 'var(--text-muted)'
+                      }}
                     >
-                      保存
-                    </button>
-                    <button
-                      type="button"
-                      className="detail-edit-btn"
-                      onClick={cancelEdit}
-                      disabled={isSaving}
-                    >
-                      取消
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                </span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSave("password")}
+                      disabled={isSaving}
+                      title="保存"
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--success-bg)',
+                        color: 'var(--success)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                         e.currentTarget.style.background = 'var(--success)';
+                         e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                         e.currentTarget.style.background = 'var(--success-bg)';
+                         e.currentTarget.style.color = 'var(--success)';
+                      }}
+                    >
+                      <CheckIcon />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      disabled={isSaving}
+                      title="取消"
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--bg-hover)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                         e.currentTarget.style.background = 'var(--bg-active)';
+                         e.currentTarget.style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                         e.currentTarget.style.background = 'var(--bg-hover)';
+                         e.currentTarget.style.color = 'var(--text-secondary)';
+                      }}
+                    >
+                      <XIcon />
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
                   <span
                     className="detail-edit-trigger"
                     onDoubleClick={() => startEdit("password")}
                     title="双击编辑"
+                    style={{ cursor: 'pointer' }}
                   >
                     {account.password ? (showPassword ? account.password : "••••••••") : "-"}
                   </span>
@@ -197,11 +375,12 @@ export function DetailModal({ isOpen, onClose, account, usage, onUpdateCredentia
                       className="password-toggle"
                       onClick={() => setShowPassword((prev) => !prev)}
                       aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                      style={{ display: 'flex', alignItems: 'center' }}
                     >
-                      {showPassword ? "🙈" : "👁️"}
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   )}
-                </>
+                </div>
               )}
             </span>
           </div>

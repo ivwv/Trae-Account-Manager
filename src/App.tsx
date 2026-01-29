@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { save } from "@tauri-apps/plugin-dialog";
 import { Sidebar } from "./components/Sidebar";
 import { AccountCard } from "./components/AccountCard";
@@ -25,6 +26,25 @@ interface AccountWithUsage extends AccountBrief {
 
 type ViewMode = "grid" | "list";
 const USAGE_CACHE_KEY = "trae_usage_cache_v1";
+const UPDATE_CHECK_URL = "https://api.github.com/repos/S-Trespassing/Trae-Account-Manager-Pro/releases/latest";
+
+const normalizeVersion = (value: string) => value.trim().replace(/^v/i, "");
+const parseVersion = (value: string) =>
+  normalizeVersion(value)
+    .match(/\d+/g)
+    ?.map((part) => Number(part)) ?? [];
+const compareVersions = (a: string, b: string) => {
+  const aParts = parseVersion(a);
+  const bParts = parseVersion(b);
+  const length = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < length; i += 1) {
+    const left = aParts[i] ?? 0;
+    const right = bParts[i] ?? 0;
+    if (left > right) return 1;
+    if (left < right) return -1;
+  }
+  return 0;
+};
 
 function App() {
   const [accounts, setAccounts] = useState<AccountWithUsage[]>([]);
@@ -72,6 +92,7 @@ function App() {
 
   const quickRegisterNoticeRef = useRef<Map<string, number>>(new Map());
   const toastDedupRef = useRef<Map<string, number>>(new Map());
+  const updateCheckRef = useRef(false);
   const quickRegisterShowWindow = appSettings?.quick_register_show_window ?? true;
 
   // 网络状态监听
@@ -103,6 +124,30 @@ function App() {
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const checkForUpdates = useCallback(async () => {
+    if (!navigator.onLine) return;
+    try {
+      const response = await fetch(UPDATE_CHECK_URL, {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = (await response.json()) as { tag_name?: string; name?: string };
+      const latestTag = String(data.tag_name || data.name || "").trim();
+      if (!latestTag) return;
+      const currentVersion = await getVersion();
+      if (!currentVersion) return;
+      if (compareVersions(latestTag, currentVersion) > 0) {
+        addToast("info", `发现新版本 ${latestTag}，可前往 GitHub 下载更新`, 6000, "update-available");
+      }
+    } catch {
+      // silent on auto check
+    }
+  }, [addToast]);
 
   useEffect(() => {
     const handleOffline = () => {
@@ -179,6 +224,8 @@ function App() {
             quick_register_show_window: true,
             auto_refresh_enabled: true,
             privacy_auto_enable: false,
+            auto_update_check: true,
+            auto_start_enabled: false,
           });
         }
       });
@@ -186,6 +233,13 @@ function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!appSettings?.auto_update_check) return;
+    if (updateCheckRef.current) return;
+    updateCheckRef.current = true;
+    void checkForUpdates();
+  }, [appSettings, checkForUpdates]);
 
   useEffect(() => {
     let unlisten: (() => void) | null = null;

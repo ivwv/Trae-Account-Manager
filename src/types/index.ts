@@ -97,6 +97,8 @@ export interface AppSettings {
   quick_register_show_window: boolean;
   auto_refresh_enabled: boolean;
   privacy_auto_enable: boolean;
+  auto_update_check: boolean;
+  auto_start_enabled: boolean;
 }
 
 // 用户统计数据

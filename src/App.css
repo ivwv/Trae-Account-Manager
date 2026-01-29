@@ -1637,11 +1637,11 @@ body {
 
 .detail-value.editable {
   cursor: pointer;
-  color: var(--accent);
+  transition: opacity 0.2s;
 }
 
 .detail-value.editable:hover {
-  text-decoration: underline;
+  opacity: 0.8;
 }
 
 .detail-password {

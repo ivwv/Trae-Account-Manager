@@ -164,7 +164,7 @@ Trae Account Manager 是一款专为 Trae IDE 用户打造的多账号管理工�
 
 ### 📥 下载安装
 
-1. 前往 [Releases](https://github.com/Yang-505/Trae-Account-Manager/releases) 页面
+1. 前往 [Releases](https://github.com/S-Trespassing/Trae-Account-Manager-Pro/releases) 页面
 2. 下载最新版本的安装包
 3. 运行安装程序
 4. 启动 Trae Account Manager
@@ -173,7 +173,7 @@ Trae Account Manager 是一款专为 Trae IDE 用户打造的多账号管理工�
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Yang-505/Trae-Account-Manager.git
+git clone https://github.com/S-Trespassing/Trae-Account-Manager-Pro.git
 cd Trae-Account-Manager
 
 # 安装依赖
@@ -434,7 +434,7 @@ Trae-Account-Manager/
 
 如果你发现了 Bug 或有功能建议，请：
 
-1. 前往 [Issues](https://github.com/Yang-505/Trae-Account-Manager/issues) 页面
+1. 前往 [Issues](https://github.com/S-Trespassing/Trae-Account-Manager-Pro/issues) 页面
 2. 点击 "New Issue"
 3. 选择合适的模板
 4. 详细描述问题或建议
@@ -478,8 +478,8 @@ Trae-Account-Manager/
 
 ## 📞 联系方式
 
-- GitHub: [@Yang-505](https://github.com/Yang-505)
-- Issues: [项目 Issues](https://github.com/Yang-505/Trae-Account-Manager/issues)
+- GitHub: [@S-Trespassing](https://github.com/S-Trespassing)
+- Issues: [项目 Issues](https://github.com/S-Trespassing/Trae-Account-Manager-Pro/issues)
 
 ---
 
@@ -501,4 +501,4 @@ Made with ❤️ by Yang-505
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yang-505/Trae-Account-Manager&type=date&legend=top-left)](https://www.star-history.com/#Yang-505/Trae-Account-Manager&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=S-Trespassing/Trae-Account-Manager-Pro&type=date&legend=top-left)](https://www.star-history.com/#S-Trespassing/Trae-Account-Manager-Pro&type=date&legend=top-left)

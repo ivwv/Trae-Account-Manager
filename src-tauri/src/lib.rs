@@ -3,6 +3,7 @@
 
 mod api;
 mod account;
+mod autostart;
 mod machine;
 mod privacy;
 
@@ -24,10 +25,13 @@ use account::{AccountBrief, AccountManager, Account};
 use api::{TraeApiClient, UsageSummary, UsageQueryResponse, UserStatisticResult};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct AppSettings {
     pub quick_register_show_window: bool,
     pub auto_refresh_enabled: bool,
     pub privacy_auto_enable: bool,
+    pub auto_update_check: bool,
+    pub auto_start_enabled: bool,
 }
 
 impl Default for AppSettings {
@@ -36,6 +40,8 @@ impl Default for AppSettings {
             quick_register_show_window: true,
             auto_refresh_enabled: true,
             privacy_auto_enable: false,
+            auto_update_check: true,
+            auto_start_enabled: false,
         }
     }
 }
@@ -139,6 +145,9 @@ async fn get_settings(state: State<'_, AppState>) -> Result<AppSettings> {
 
 #[tauri::command]
 async fn update_settings(settings: AppSettings, state: State<'_, AppState>) -> Result<AppSettings> {
+    if let Err(err) = autostart::set_auto_start(settings.auto_start_enabled) {
+        return Err(ApiError::from(err));
+    }
     {
         let mut current = state.settings.lock().await;
         *current = settings.clone();
@@ -1500,6 +1509,9 @@ pub fn run() {
         println!("[WARN] 读取设置失败，使用默认值: {}", err);
         AppSettings::default()
     });
+    if let Err(err) = autostart::set_auto_start(settings.auto_start_enabled) {
+        println!("[WARN] 设置开机自启动失败: {}", err);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

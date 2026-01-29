@@ -437,6 +437,30 @@ impl AccountManager {
                         }
                         self.save_store()?;
 
+                        if self.store.current_account_id.as_deref() == Some(account_id) {
+                            let login_info = crate::machine::TraeLoginInfo {
+                                token: token_result.token.clone(),
+                                refresh_token: None,
+                                user_id: account.user_id.clone(),
+                                email: account.email.clone(),
+                                username: account.name.clone(),
+                                avatar_url: account.avatar_url.clone(),
+                                host: String::new(),
+                                region: if account.region.is_empty() { "SG".to_string() } else { account.region.clone() },
+                            };
+
+                            if let Err(e) = crate::machine::write_trae_login_info(&login_info) {
+                                println!("[WARN] 更新 Trae IDE Token 失败: {}", e);
+                            } else if crate::machine::is_trae_running() {
+                                if let Err(e) = crate::machine::kill_trae() {
+                                    println!("[WARN] 重启 Trae IDE 失败: {}", e);
+                                } else if let Err(e) = crate::machine::open_trae() {
+                                    println!("[WARN] 重启 Trae IDE 失败: {}", e);
+                                }
+                            }
+                        }
+
+
                         // 使用新 Token 重新获取使用量
                         let new_client = TraeApiClient::new_with_token(&token_result.token)?;
                         new_client.get_usage_summary_by_token().await?

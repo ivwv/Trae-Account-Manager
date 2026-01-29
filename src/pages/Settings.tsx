@@ -25,6 +25,8 @@ export function Settings({
       quick_register_show_window: true,
       auto_refresh_enabled: true,
       privacy_auto_enable: false,
+      auto_update_check: true,
+      auto_start_enabled: false,
     }),
     []
   );
@@ -406,6 +408,58 @@ export function Settings({
               disabled={settingsDisabled}
               role="switch"
               aria-checked={currentSettings.auto_refresh_enabled}
+            >
+              <span className="pill-track"></span>
+              <span className="pill-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-label">自动检查更新</div>
+            <div className="setting-desc">启动时自动请求 GitHub Release 更新信息</div>
+          </div>
+          <div className="setting-action">
+            <button
+              type="button"
+              className={`pill-toggle ${currentSettings.auto_update_check ? "on" : ""}`}
+              onClick={() =>
+                updateSettings(
+                  { auto_update_check: !currentSettings.auto_update_check },
+                  "已更新自动检查更新设置"
+                )
+              }
+              disabled={settingsDisabled}
+              role="switch"
+              aria-checked={currentSettings.auto_update_check}
+            >
+              <span className="pill-track"></span>
+              <span className="pill-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-label">开机自动启动</div>
+            <div className="setting-desc">登录系统时自动启动应用</div>
+          </div>
+          <div className="setting-action">
+            <button
+              type="button"
+              className={`pill-toggle ${currentSettings.auto_start_enabled ? "on" : ""}`}
+              onClick={() =>
+                updateSettings(
+                  { auto_start_enabled: !currentSettings.auto_start_enabled },
+                  "已更新开机自启动设置"
+                )
+              }
+              disabled={settingsDisabled}
+              role="switch"
+              aria-checked={currentSettings.auto_start_enabled}
             >
               <span className="pill-track"></span>
               <span className="pill-thumb"></span>
