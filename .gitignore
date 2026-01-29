@@ -69,9 +69,18 @@ accounts.txt
 !.env.example
 
 # Scripts (Python helper scripts)
-scripts/
+scripts/ 
 __pycache__/
 *.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
 
 # Trae Scripts
 trae_scripts/
+
+# Test Artifacts
+screenshots/
+test-results/
+playwright-report/

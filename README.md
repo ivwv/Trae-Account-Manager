@@ -9,6 +9,8 @@
 
 **一款强大的 Trae IDE 多账号管理工具**
 
+> ℹ️ **说明**：本项目基于 [Yang-505/Trae-Account-Manager](https://github.com/Yang-505/Trae-Account-Manager) 原项目修改并二次开源。
+
 [功能特性](#-功能特性) • [快速开始](#-快速开始) • [使用指南](#-使用指南) • [常见问题](#-常见问题) • [贡献指南](#-贡献指南)
 
 </div>
