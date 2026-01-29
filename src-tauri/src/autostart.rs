@@ -1,5 +1,4 @@
 ﻿use anyhow::{anyhow, Result};
-use std::path::PathBuf;
 
 const AUTOSTART_NAME: &str = "TraeAccountManagerPro";
 const AUTOSTART_LABEL: &str = "com.sauce.trae-auto";
