@@ -80,6 +80,9 @@ env/
 # Trae Scripts
 trae_scripts/
 
+# Trae IDE
+.trae/
+
 # Test Artifacts
 screenshots/
 test-results/
