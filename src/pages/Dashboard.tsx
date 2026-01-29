@@ -187,46 +187,6 @@ export function Dashboard({ accounts, onSwitchAccount, onNavigate, onRefresh, re
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                     </span>
                     <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: 'var(--text-primary)' }}>当前账号</h2>
-                    {currentAccount && onRefresh && (
-                        <button
-                            onClick={() => onRefresh(currentAccount.id)}
-                            title="刷新数据"
-                            disabled={refreshingIds?.has(currentAccount.id)}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: refreshingIds?.has(currentAccount.id) ? 'not-allowed' : 'pointer',
-                                padding: '4px',
-                                marginLeft: '8px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'var(--text-muted)',
-                                transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={(e) => !refreshingIds?.has(currentAccount.id) && (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <svg 
-                                width="16" 
-                                height="16" 
-                                viewBox="0 0 24 24" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                                style={{
-                                    animation: refreshingIds?.has(currentAccount.id) ? 'spin 1s linear infinite' : 'none'
-                                }}
-                            >
-                                <path d="M23 4v6h-6"></path>
-                                <path d="M1 20v-6h6"></path>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                            </svg>
-                        </button>
-                    )}
                 </div>
 
                 {currentAccount ? (

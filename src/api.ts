@@ -1,34 +1,45 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Account, AccountBrief, AppSettings, UsageSummary, UsageEventsResponse, UserStatisticData } from "./types";
 
+function checkNetwork() {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error("网络连接已断开，请检查网络设置");
+  }
+}
+
+async function invokeNetwork<T>(cmd: string, args?: any): Promise<T> {
+  checkNetwork();
+  return invoke(cmd, args);
+}
+
 // 添加账号（通过 Cookies）
 export async function addAccount(cookies: string): Promise<Account> {
-  return invoke("add_account", { cookies });
+  return invokeNetwork("add_account", { cookies });
 }
 
 // 添加账号（通过 Token，可选 Cookies）
 export async function addAccountByToken(token: string, cookies?: string): Promise<Account> {
-  return invoke("add_account_by_token", { token, cookies });
+  return invokeNetwork("add_account_by_token", { token, cookies });
 }
 
 // 添加账号（通过邮箱密码登录）
 export async function addAccountByEmail(email: string, password: string): Promise<Account> {
-  return invoke("add_account_by_email", { email, password });
+  return invokeNetwork("add_account_by_email", { email, password });
 }
 
 export async function quickRegister(showWindow?: boolean): Promise<Account> {
   if (typeof showWindow === "boolean") {
-    return invoke("quick_register", { showWindow });
+    return invokeNetwork("quick_register", { showWindow });
   }
-  return invoke("quick_register");
+  return invokeNetwork("quick_register");
 }
 
 export async function startBrowserLogin(): Promise<void> {
-  return invoke("start_browser_login");
+  return invokeNetwork("start_browser_login");
 }
 
 export async function finishBrowserLogin(): Promise<Account> {
-  return invoke("finish_browser_login");
+  return invokeNetwork("finish_browser_login");
 }
 
 export async function cancelBrowserLogin(): Promise<void> {
@@ -68,21 +79,21 @@ export async function switchAccount(
 
 // 获取账号使用量
 export async function getAccountUsage(accountId: string): Promise<UsageSummary> {
-  return invoke("get_account_usage", { accountId });
+  return invokeNetwork("get_account_usage", { accountId });
 }
 
 // 更新账号 Token
 export async function updateAccountToken(accountId: string, token: string): Promise<UsageSummary> {
-  return invoke("update_account_token", { accountId, token });
+  return invokeNetwork("update_account_token", { accountId, token });
 }
 
 // 刷新 Token
 export async function refreshToken(accountId: string): Promise<void> {
-  return invoke("refresh_token", { accountId });
+  return invokeNetwork("refresh_token", { accountId });
 }
 
 export async function refreshTokenWithPassword(accountId: string, password: string): Promise<void> {
-  return invoke("refresh_token_with_password", { accountId, password });
+  return invokeNetwork("refresh_token_with_password", { accountId, password });
 }
 
 export async function loginAccountWithEmail(
@@ -90,14 +101,14 @@ export async function loginAccountWithEmail(
   email: string,
   password: string
 ): Promise<UsageSummary> {
-  return invoke("login_account_with_email", { accountId, email, password });
+  return invokeNetwork("login_account_with_email", { accountId, email, password });
 }
 
 export async function updateAccountProfile(
   accountId: string,
   updates: { email?: string | null; password?: string | null }
 ): Promise<Account> {
-  return invoke("update_account_profile", {
+  return invokeNetwork("update_account_profile", {
     accountId,
     email: updates.email ?? null,
     password: updates.password ?? null,
@@ -106,7 +117,7 @@ export async function updateAccountProfile(
 
 // 更新 Cookies
 export async function updateCookies(accountId: string, cookies: string): Promise<void> {
-  return invoke("update_cookies", { accountId, cookies });
+  return invokeNetwork("update_cookies", { accountId, cookies });
 }
 
 // 导出账号
@@ -143,7 +154,7 @@ export async function getUsageEvents(
   pageNum: number = 1,
   pageSize: number = 20
 ): Promise<UsageEventsResponse> {
-  return invoke("get_usage_events", {
+  return invokeNetwork("get_usage_events", {
     accountId,
     startTime,
     endTime,
@@ -217,15 +228,15 @@ export async function scanTraePath(): Promise<string> {
 
 // 领取礼包
 export async function claimGift(accountId: string): Promise<void> {
-  return invoke("claim_gift", { accountId });
+  return invokeNetwork("claim_gift", { accountId });
 }
 
 // 获取用户统计数据
 export async function getUserStatistics(accountId: string): Promise<UserStatisticData> {
-  return invoke("get_user_statistics", { accountId });
+  return invokeNetwork("get_user_statistics", { accountId });
 }
 
 // 打开购买页面（内置浏览器，携带账号 Cookies）
 export async function openPricing(accountId: string): Promise<void> {
-  return invoke("open_pricing", { accountId });
+  return invokeNetwork("open_pricing", { accountId });
 }

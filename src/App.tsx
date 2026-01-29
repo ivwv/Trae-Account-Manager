@@ -74,6 +74,11 @@ function App() {
   const toastDedupRef = useRef<Map<string, number>>(new Map());
   const quickRegisterShowWindow = appSettings?.quick_register_show_window ?? true;
 
+  // 网络状态监听
+  const offlineToastIdRef = useRef<string | null>(null);
+
+
+
   // 添加 Toast 通知
   const addToast = useCallback(
     (type: ToastMessage["type"], message: string, duration?: number, dedupeKey?: string) => {
@@ -98,6 +103,39 @@ function App() {
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  useEffect(() => {
+    const handleOffline = () => {
+      const id = "network-offline";
+      setToasts((prev) => {
+        // 防止重复添加
+        if (prev.some((t) => t.id === id)) return prev;
+        return [...prev, { id, type: "error", message: "网络连接已断开，请检查网络设置", duration: 0 }];
+      });
+      offlineToastIdRef.current = id;
+    };
+
+    const handleOnline = () => {
+      if (offlineToastIdRef.current) {
+        removeToast(offlineToastIdRef.current);
+        offlineToastIdRef.current = null;
+      }
+      addToast("success", "网络已重新连接", 3000);
+    };
+
+    // 初始化检查
+    if (!navigator.onLine) {
+      handleOffline();
+    }
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [addToast, removeToast]);
 
   const readUsageCache = useCallback((): Record<string, UsageSummary> => {
     try {

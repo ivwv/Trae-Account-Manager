@@ -25,8 +25,27 @@ export function Stats({ accounts, hasLoaded = true }: StatsProps) {
       const raw = localStorage.getItem(statsCacheKey(accountId));
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.data) return parsed.data as UserStatisticData;
-      if (parsed && parsed.UserID) return parsed as UserStatisticData;
+      // New format
+      if (parsed && parsed.data && parsed.cachedAt) {
+        return {
+          data: parsed.data as UserStatisticData,
+          cachedAt: new Date(parsed.cachedAt).getTime()
+        };
+      }
+      // Legacy format (treat as expired)
+      if (parsed && parsed.UserID) {
+        return {
+          data: parsed as UserStatisticData,
+          cachedAt: 0 
+        };
+      }
+      // Handle legacy format where data exists but structure might be different
+      if (parsed && parsed.data) {
+         return {
+            data: parsed.data as UserStatisticData,
+            cachedAt: 0
+         };
+      }
     } catch {
       return null;
     }
@@ -88,42 +107,83 @@ export function Stats({ accounts, hasLoaded = true }: StatsProps) {
       setStatsError(null);
       return;
     }
-    const cachedStats = accounts
-      .map(account => loadStatsCache(account.id))
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    // Load all caches
+    const cachedResults = accounts.map(account => {
+      const cache = loadStatsCache(account.id);
+      return { id: account.id, cache };
+    });
+
+    // Display valid cache immediately (even if stale)
+    const validCacheData = cachedResults
+      .map(r => r.cache?.data)
       .filter(Boolean) as UserStatisticData[];
-    if (cachedStats.length > 0) {
-      setUserStats(aggregateStats(cachedStats));
-      setLoadingStats(false);
-      setStatsError(null);
+
+    if (validCacheData.length > 0) {
+      setUserStats(aggregateStats(validCacheData));
+      setLoadingStats(false); // We have data, so stop loading
     } else {
-      setUserStats(null);
-      setLoadingStats(true);
-      setStatsError(null);
+      setLoadingStats(true); // No data at all, show loading
     }
+    setStatsError(null);
+
+    // Identify stale accounts (no cache or cache older than today 00:00)
+    const accountsToFetch = accounts.filter(account => {
+      const result = cachedResults.find(r => r.id === account.id);
+      if (!result?.cache) return true; // No cache
+      return result.cache.cachedAt < todayStart; // Stale cache
+    });
+
+    if (accountsToFetch.length === 0) {
+      setLoadingStats(false);
+      return; // All fresh
+    }
+
+    // Fetch stale accounts in background
     (async () => {
       try {
         const results = await Promise.allSettled(
-          accounts.map(async (account) => {
+          accountsToFetch.map(async (account) => {
             const stats = await api.getUserStatistics(account.id);
             saveStatsCache(account.id, stats);
-            return stats;
+            return { id: account.id, stats };
           })
         );
+        
         if (cancelled) return;
-        const freshStats = results
-          .filter((res): res is PromiseFulfilledResult<UserStatisticData> => res.status === "fulfilled")
-          .map(res => res.value);
-        const fallbackStats = cachedStats.length > 0 ? cachedStats : [];
-        const mergedList = freshStats.length > 0 ? freshStats : fallbackStats;
-        if (mergedList.length > 0) {
-          setUserStats(aggregateStats(mergedList));
+
+        const freshStatsMap = new Map<string, UserStatisticData>();
+        results.forEach(res => {
+          if (res.status === "fulfilled") {
+            freshStatsMap.set(res.value.id, res.value.stats);
+          }
+        });
+
+        // Merge fresh data with existing fresh cache
+        const finalStatsList = accounts.map(account => {
+          if (freshStatsMap.has(account.id)) {
+            return freshStatsMap.get(account.id)!;
+          }
+          const cache = cachedResults.find(r => r.id === account.id)?.cache?.data;
+          return cache;
+        }).filter(Boolean) as UserStatisticData[];
+
+        if (finalStatsList.length > 0) {
+          setUserStats(aggregateStats(finalStatsList));
           setStatsError(null);
         } else {
-          setStatsError("获取统计数据失败");
+          // Only show error if we still have no data
+          if (!userStats) {
+             setStatsError("获取统计数据失败");
+          }
         }
       } catch (e: any) {
         if (cancelled) return;
-        if (!cachedStats.length) {
+        // Only show error if we have no cached data to show
+        if (!validCacheData.length) {
           setStatsError(e.message || "获取统计数据失败");
         }
       } finally {

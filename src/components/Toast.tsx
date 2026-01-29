@@ -26,13 +26,15 @@ function ToastItem({ message, onRemove }: { message: ToastMessage; onRemove: (id
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    const duration = message.duration || 3000;
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-      setTimeout(() => onRemove(message.id), 300);
-    }, duration);
-
-    return () => clearTimeout(timer);
+    const duration = message.duration === 0 ? 0 : (message.duration || 3000);
+    
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        setIsExiting(true);
+        setTimeout(() => onRemove(message.id), 300);
+      }, duration);
+      return () => clearTimeout(timer);
+    }
   }, [message, onRemove]);
 
   const handleClose = () => {
