@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// 账号信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,7 +50,7 @@ impl Account {
             created_at: now,
             updated_at: now,
             is_active: true,
-            machine_id: None,
+            machine_id: Some(Uuid::new_v4().to_string()),
         }
     }
 }

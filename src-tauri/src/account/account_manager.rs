@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use std::fs;
 use std::path::PathBuf;
+use uuid::Uuid;
 
 use super::types::*;
 use crate::api::{TraeApiClient, UsageSummary, UsageQueryResponse, login_with_email};
@@ -15,9 +16,24 @@ impl AccountManager {
     /// 创建账号管理器
     pub fn new() -> Result<Self> {
         let data_path = Self::get_data_path()?;
-        let store = Self::load_store(&data_path)?;
+        let mut store = Self::load_store(&data_path)?;
 
-        Ok(Self { store, data_path })
+        // 确保每个账号都有机器码
+        let mut changed = false;
+        for account in &mut store.accounts {
+            if account.machine_id.is_none() {
+                account.machine_id = Some(Uuid::new_v4().to_string());
+                changed = true;
+            }
+        }
+
+        let manager = Self { store, data_path };
+
+        if changed {
+            manager.save_store()?;
+        }
+
+        Ok(manager)
     }
 
     /// 获取数据存储路径
@@ -731,7 +747,17 @@ impl AccountManager {
 
             // 尝试通过 cookies 添加账号
             match self.add_account(cookies, None).await {
-                Ok(_) => {
+                Ok(account) => {
+                    // 如果导入数据中有 machine_id，则更新
+                    if let Some(machine_id) = item.get("machine_id").and_then(|v| v.as_str()) {
+                         if !machine_id.is_empty() {
+                            if let Some(acc) = self.store.accounts.iter_mut().find(|a| a.id == account.id) {
+                                acc.machine_id = Some(machine_id.to_string());
+                                // 保存更新
+                                self.save_store()?;
+                            }
+                         }
+                    }
                     imported_count += 1;
                 }
                 Err(e) => {

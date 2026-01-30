@@ -1898,8 +1898,64 @@ async fn get_user_statistics(account_id: String, state: State<'_, AppState>) -> 
     manager.get_account_statistics(&account_id).await.map_err(ApiError::from)
 }
 
+async fn handle_silent_start() -> anyhow::Result<()> {
+    let mut manager = AccountManager::new()?;
+    
+    // 1. Refresh all accounts
+    let account_ids: Vec<String> = manager.get_accounts().into_iter().map(|a| a.id).collect();
+    for id in account_ids {
+        if let Err(e) = manager.refresh_token(&id).await {
+            println!("[Silent] Failed to refresh account {}: {}", id, e);
+        } else {
+            println!("[Silent] Refreshed account {}", id);
+        }
+    }
+
+    // 2. Sync with Trae IDE if it's not running
+    if !machine::is_trae_running() {
+        let accounts = manager.get_accounts();
+        if let Some(current) = accounts.iter().find(|a| a.is_current) {
+             if let Ok(account) = manager.get_account(&current.id) {
+                if let Some(token) = account.jwt_token {
+                     let login_info = machine::TraeLoginInfo {
+                        token,
+                        refresh_token: None,
+                        user_id: account.user_id,
+                        email: account.email,
+                        username: account.name,
+                        avatar_url: account.avatar_url,
+                        host: String::new(),
+                        region: if account.region.is_empty() { "SG".to_string() } else { account.region },
+                    };
+                    if let Err(e) = machine::write_trae_login_info(&login_info) {
+                        println!("[Silent] Failed to write Trae login info: {}", e);
+                    } else {
+                        println!("[Silent] Synced token to Trae IDE for account {}", current.email);
+                    }
+                }
+             }
+        }
+    } else {
+        println!("[Silent] Trae IDE is running, skipping sync");
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Check for silent flag
+    let args: Vec<String> = std::env::args().collect();
+    if args.contains(&"--silent".to_string()) {
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
+        rt.block_on(async {
+            if let Err(e) = handle_silent_start().await {
+                eprintln!("[Silent] Error: {}", e);
+            }
+        });
+        std::process::exit(0);
+    }
+
     let account_manager = AccountManager::new().expect("无法初始化账号管理器");
     let settings = load_settings_from_disk().unwrap_or_else(|err| {
         println!("[WARN] 读取设置失败，使用默认值: {}", err);

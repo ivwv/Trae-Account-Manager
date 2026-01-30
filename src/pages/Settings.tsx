@@ -444,8 +444,22 @@ export function Settings({
 
         <div className="setting-item">
           <div className="setting-info">
-            <div className="setting-label">开机自动启动</div>
-            <div className="setting-desc">登录系统时自动启动应用</div>
+            <div className="setting-label">
+              开机静默自动刷新 Token
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '2px 6px', 
+                background: 'var(--success-bg)', 
+                color: 'var(--success)', 
+                borderRadius: '4px', 
+                marginLeft: '8px',
+                fontWeight: 'normal',
+                border: '1px solid var(--success-border)'
+              }}>强烈推荐</span>
+            </div>
+            <div className="setting-desc">
+              开机时在后台静默启动，自动刷新所有账号 Token 并同步到 Trae IDE，确保打开 IDE 时 Token 始终有效且无需手动刷新。
+            </div>
           </div>
           <div className="setting-action">
             <button
@@ -454,7 +468,7 @@ export function Settings({
               onClick={() =>
                 updateSettings(
                   { auto_start_enabled: !currentSettings.auto_start_enabled },
-                  "已更新开机自启动设置"
+                  "已更新开机静默刷新设置"
                 )
               }
               disabled={settingsDisabled}

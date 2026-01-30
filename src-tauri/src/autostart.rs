@@ -1,4 +1,4 @@
-﻿use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result};
 
 const AUTOSTART_NAME: &str = "TraeAccountManagerPro";
 const AUTOSTART_LABEL: &str = "com.sauce.trae-auto";
@@ -18,7 +18,8 @@ pub fn set_auto_start(enabled: bool) -> Result<()> {
         .map_err(|e| anyhow!("无法打开自启动注册表项: {}", e))?;
 
     if enabled {
-        key.set_value(AUTOSTART_NAME, &exe_str)
+        let cmd = format!("\"{}\" --silent", exe_str);
+        key.set_value(AUTOSTART_NAME, &cmd)
             .map_err(|e| anyhow!("写入自启动注册表失败: {}", e))?;
     } else {
         let _ = key.delete_value(AUTOSTART_NAME);
@@ -55,6 +56,7 @@ pub fn set_auto_start(enabled: bool) -> Result<()> {
   <key>ProgramArguments</key>
   <array>
     <string>{exe}</string>
+    <string>--silent</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
