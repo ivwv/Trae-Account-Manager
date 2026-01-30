@@ -70,86 +70,13 @@ Trae Account Manager 是一款专为 Trae IDE 用户打造的多账号管理工�
 ## ✨ 功能特性
 
 ### 🎭 账号管理
-
-- ✅ **添加账号**
-  - 支持通过 Token 添加账号
-  - 自动获取账号信息（邮箱、用户名、头像等）
-  - 自动绑定机器码
-
-- ✅ **账号切换**
-  - 一键切换到指定账号
-  - 自动关闭 Trae IDE
-  - 清除旧登录状态
-  - 写入新账号信息
-  - 自动重新打开 Trae IDE
-  - 切换前弹出确认对话框
-
-- ✅ **账号信息**
-  - 显示账号邮箱、用户名
-  - 显示账号状态（正常/异常）
-  - 显示账号类型（礼包/普通）
-  - 显示当前使用的账号
-  - 显示账号添加时间
-
-- ✅ **账号操作**
-  - 查看账号详细信息
-  - 更新账号 Token
-  - 删除账号
-  - 复制账号信息
-
-### 📊 使用量监控
-
-- ✅ **实时使用量**
-  - 显示今日使用量
-  - 显示总使用量
-  - 显示剩余额度
-  - 使用量进度条可视化
-
-- ✅ **使用记录**
-  - 查看详细使用事件
-  - 按时间范围筛选
-  - 显示每次使用的 Token 数量
-  - 显示使用时间和模型信息
-
-### 🔧 机器码管理
-
-- ✅ **Trae IDE 机器码**
-  - 查看当前 Trae IDE 机器码
-  - 复制机器码到剪贴板
-  - 刷新机器码
-  - 清除 Trae IDE 登录状态
-  - 重置机器码
-
-- ✅ **账号机器码绑定**
-  - 每个账号独立绑定机器码
-  - 切换账号时自动更新机器码
-  - 支持手动绑定机器码
-
-### ⚙️ 系统设置
-
-- ✅ **Trae IDE 路径配置**
-  - 自动扫描 Trae IDE 安装路径
-  - 手动选择 Trae.exe 文件
-  - 保存路径配置
-  - 切换账号后自动打开 Trae IDE
-
-- ✅ **数据管理**
-  - 导出所有账号数据为 JSON
-  - 从 JSON 文件导入账号
-  - 清空所有账号数据
-
-### 🎨 界面特性
-
-- ✅ **现代化设计**
-  - 简洁美观的卡片式布局
-  - 流畅的动画效果
-  - 响应式设计
-
-- ✅ **交互体验**
-  - Toast 消息提示
-  - 确认对话框
-  - 加载状态提示
-  - 右键菜单
+<img width="1644" height="1173" alt="tmp1446" src="https://github.com/user-attachments/assets/e1df5cbf-17c8-431a-9c24-b984bf410657" />
+<img width="1644" height="1173" alt="tmp4942" src="https://github.com/user-attachments/assets/f862bda8-1d1d-4c04-98dc-f64dd06b0c4d" />
+<img width="1504" height="1097" alt="tmp64A6" src="https://github.com/user-attachments/assets/31d0e581-4174-47a4-b048-579a8ec1aad3" />
+<img width="1644" height="1173" alt="tmp9730" src="https://github.com/user-attachments/assets/aa81fa53-eb25-4807-a97f-b82d8dd401e3" />
+<img width="1644" height="1173" alt="tmpAA4C" src="https://github.com/user-attachments/assets/7a761442-0ccf-4a02-8554-970e88d5c6fe" />
+<img width="1644" height="1173" alt="tmpBBE1" src="https://github.com/user-attachments/assets/01156ffa-3a1a-4d7d-9081-cba8c60ab0b3" />
+<img width="1644" height="1173" alt="tmpCBA1" src="https://github.com/user-attachments/assets/5b452587-3690-4298-976c-215c90efb027" />
 
 ---
 
