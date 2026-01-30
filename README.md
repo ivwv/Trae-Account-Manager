@@ -1,4 +1,4 @@
-﻿# 🚀 Trae Account Manager
+﻿﻿# 🚀 Trae Account Manager
 
 <div align="center">
 
