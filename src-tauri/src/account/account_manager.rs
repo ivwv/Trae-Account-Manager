@@ -51,11 +51,20 @@ impl AccountManager {
     fn load_store(path: &PathBuf) -> Result<AccountStore> {
         if path.exists() {
             let content = fs::read_to_string(path)?;
-            if content.trim().is_empty() {
+            let cleaned = content.trim_start_matches('\u{feff}');
+            let trimmed = cleaned.trim();
+            if trimmed.is_empty() {
                 return Ok(AccountStore::default());
             }
-            let store: AccountStore = serde_json::from_str(&content)?;
-            Ok(store)
+            match serde_json::from_str::<AccountStore>(trimmed) {
+                Ok(store) => Ok(store),
+                Err(_) => {
+                    let store = AccountStore::default();
+                    let content = serde_json::to_string_pretty(&store)?;
+                    fs::write(path, content)?;
+                    Ok(store)
+                }
+            }
         } else {
             Ok(AccountStore::default())
         }
