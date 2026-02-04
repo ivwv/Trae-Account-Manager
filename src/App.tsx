@@ -80,6 +80,8 @@ function App() {
     title: string;
     message: string;
     type: "danger" | "warning" | "info";
+    confirmText?: string;
+    cancelText?: string;
     onConfirm: () => void;
   } | null>(null);
 
@@ -1061,8 +1063,8 @@ function App() {
           title={confirmModal.title}
           message={confirmModal.message}
           type={confirmModal.type}
-          confirmText="确定"
-          cancelText="取消"
+          confirmText={confirmModal.confirmText}
+          cancelText={confirmModal.cancelText}
           onConfirm={confirmModal.onConfirm}
           onCancel={() => setConfirmModal(null)}
         />
