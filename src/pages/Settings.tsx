@@ -22,9 +22,9 @@ export function Settings({
   const [scanning, setScanning] = useState(false);
   const defaultSettings = useMemo<AppSettings>(
     () => ({
-      quick_register_show_window: true,
+      quick_register_show_window: false,
       auto_refresh_enabled: true,
-      privacy_auto_enable: false,
+      privacy_auto_enable: true,
       auto_update_check: true,
       auto_start_enabled: false,
     }),

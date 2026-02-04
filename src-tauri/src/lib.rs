@@ -25,6 +25,18 @@ use warp::Filter;
 use account::{AccountBrief, AccountManager, Account};
 use api::{TraeApiClient, UsageSummary, UsageQueryResponse, UserStatisticResult};
 
+#[cfg(target_os = "windows")]
+fn hide_console_window() {
+    use windows_sys::Win32::System::Console::GetConsoleWindow;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+    unsafe {
+        let hwnd = GetConsoleWindow();
+        if !hwnd.is_null() {
+            ShowWindow(hwnd, SW_HIDE);
+        }
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct AppSettings {
@@ -38,9 +50,9 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            quick_register_show_window: true,
+            quick_register_show_window: false,
             auto_refresh_enabled: true,
-            privacy_auto_enable: false,
+            privacy_auto_enable: true,
             auto_update_check: true,
             auto_start_enabled: false,
         }
@@ -1789,16 +1801,25 @@ async fn switch_account(account_id: String, force: Option<bool>, state: State<'_
                 return Ok(());
             }
         };
-        tokio::task::spawn_blocking(move || {
+        let result = tokio::task::spawn_blocking(move || {
             let result = privacy::enable_privacy_mode_at_path_with_restart(db_path, || {
                 println!("[INFO] 正在重启 Trae IDE...");
                 machine::kill_trae()?;
                 machine::open_trae()
             });
-            if let Err(err) = result {
+            result
+        })
+        .await;
+
+        match result {
+            Ok(Ok(_)) => {}
+            Ok(Err(err)) => {
                 println!("[ERROR] 自动开启隐私模式失败: {}", err);
             }
-        });
+            Err(err) => {
+                println!("[ERROR] 自动开启隐私模式任务失败: {}", err);
+            }
+        }
     }
 
     Ok(())
@@ -2218,6 +2239,8 @@ pub fn run() {
     // Check for silent flag
     let args: Vec<String> = std::env::args().collect();
     if args.contains(&"--silent".to_string()) {
+        #[cfg(target_os = "windows")]
+        hide_console_window();
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
         rt.block_on(async {
             if let Err(e) = handle_silent_start().await {

@@ -17,7 +17,7 @@ import { Stats } from "./pages/Stats";
 import { Settings } from "./pages/Settings";
 import { About } from "./pages/About";
 import * as api from "./api";
-import type { AccountBrief, AppSettings, UsageSummary } from "./types";
+import type { Account, AccountBrief, AppSettings, UsageSummary } from "./types";
 import "./App.css";
 
 interface AccountWithUsage extends AccountBrief {
@@ -106,7 +106,7 @@ function App() {
   const quickRegisterNoticeRef = useRef<Map<string, number>>(new Map());
   const toastDedupRef = useRef<Map<string, number>>(new Map());
   const updateCheckRef = useRef(false);
-  const quickRegisterShowWindow = appSettings?.quick_register_show_window ?? true;
+  const quickRegisterShowWindow = appSettings?.quick_register_show_window ?? false;
 
   // 网络状态监听
   const offlineToastIdRef = useRef<string | null>(null);
@@ -295,9 +295,9 @@ function App() {
       .catch(() => {
         if (active) {
           setAppSettings({
-            quick_register_show_window: true,
+            quick_register_show_window: false,
             auto_refresh_enabled: true,
-            privacy_auto_enable: false,
+            privacy_auto_enable: true,
             auto_update_check: true,
             auto_start_enabled: false,
           });
@@ -455,6 +455,35 @@ function App() {
     }
   };
 
+  const handleAccountAdded = useCallback(
+    (account: Account) => {
+      setAccounts((prev) => {
+        const existing = prev.find((item) => item.id === account.id);
+        const nextAccount: AccountWithUsage = {
+          id: account.id,
+          name: account.name,
+          email: account.email,
+          avatar_url: account.avatar_url,
+          plan_type: account.plan_type,
+          is_active: account.is_active,
+          created_at: account.created_at,
+          machine_id: account.machine_id,
+          is_current: existing?.is_current ?? false,
+          usage: existing?.usage ?? null,
+          password: account.password ?? existing?.password ?? null,
+        };
+        if (existing) {
+          return prev.map((item) => (item.id === account.id ? nextAccount : item));
+        }
+        return [...prev, nextAccount];
+      });
+      setError(null);
+      setHasLoaded(true);
+      void handleRefreshAccount(account.id, { silent: true });
+    },
+    [handleRefreshAccount]
+  );
+
   // 选择账号
   const handleSelectAccount = (accountId: string) => {
     setSelectedIds((prev) => {
@@ -584,10 +613,10 @@ function App() {
 
   const handleRelogin = async (
     accountId: string,
-    options?: { forceManual?: boolean; source?: "update-token" | "relogin" }
+    options?: { forceManual?: boolean; source?: "update-token" | "relogin"; suppressToast?: boolean }
   ) => {
     try {
-      if (options?.source === "update-token") {
+      if (options?.source === "update-token" && !options?.suppressToast) {
         addToast("info", "正在更新 Token...", 2000, "update-token-progress");
       }
       const account = await api.getAccount(accountId);
@@ -619,11 +648,11 @@ function App() {
         const passwordLabel = account.password || "未保存";
         setConfirmModal({
           isOpen: true,
-          title: "凭据已失效",
+          title: "凭据似乎失效了",
           message:
             `账号: ${accountLabel}\n` +
             `密码: ${passwordLabel}\n\n` +
-            "该账号凭据已失效，请通过账号密码重新导入。",
+            "账号凭据似乎失效了或网络波动导致的连接异常。请检查网络，或尝试重新登录。",
           type: "warning",
           confirmText: "知道了",
           cancelText: "关闭",
@@ -645,7 +674,32 @@ function App() {
   };
 
   const handleUpdateToken = async (accountId: string) => {
-    await handleRelogin(accountId, { source: "update-token" });
+    if (refreshingIds.has(accountId)) {
+      return;
+    }
+
+    setRefreshingIds((prev) => new Set(prev).add(accountId));
+    addToast("info", "正在更新 Token...", 2000, "update-token-progress");
+    try {
+      const usage = await api.getAccountUsage(accountId);
+      setAccounts((prev) =>
+        prev.map((a) => (a.id === accountId ? { ...a, usage } : a))
+      );
+      updateUsageCache({ [accountId]: usage });
+      addToast("success", "Token 已更新", 1500, "update-token-success");
+    } catch (err: any) {
+      void handleRelogin(accountId, {
+        source: "update-token",
+        forceManual: true,
+        suppressToast: true,
+      });
+    } finally {
+      setRefreshingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(accountId);
+        return next;
+      });
+    }
   };
 
   const handleLoginSubmit = async (accountId: string, email: string, password: string) => {
@@ -1077,7 +1131,7 @@ function App() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onToast={addToast}
-        onAccountAdded={loadAccounts}
+        onAccountAdded={handleAccountAdded}
         quickRegisterShowWindow={quickRegisterShowWindow}
       />
 

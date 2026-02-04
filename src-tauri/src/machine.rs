@@ -9,6 +9,15 @@ use winreg::enums::*;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
 
+#[cfg(target_os = "windows")]
+fn command_no_window(program: &str) -> Command {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    let mut cmd = Command::new(program);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd
+}
+
 /// Windows 注册表中 MachineGuid 的路径
 #[cfg(target_os = "windows")]
 const MACHINE_GUID_PATH: &str = r"SOFTWARE\Microsoft\Cryptography";
@@ -112,7 +121,7 @@ pub fn set_trae_machine_id(new_id: &str) -> Result<()> {
 /// 检查 Trae IDE 是否正在运行
 #[cfg(target_os = "windows")]
 pub fn is_trae_running() -> bool {
-    let output = Command::new("tasklist")
+    let output = command_no_window("tasklist")
         .args(["/FI", "IMAGENAME eq Trae.exe", "/NH"])
         .output();
 
@@ -146,7 +155,7 @@ pub fn kill_trae() -> Result<()> {
     println!("[INFO] 正在关闭 Trae IDE...");
 
     // 先尝试优雅关闭
-    let _ = Command::new("taskkill")
+    let _ = command_no_window("taskkill")
         .args(["/IM", "Trae.exe"])
         .output();
 
@@ -155,7 +164,7 @@ pub fn kill_trae() -> Result<()> {
 
     // 如果还在运行，强制关闭
     if is_trae_running() {
-        let output = Command::new("taskkill")
+        let output = command_no_window("taskkill")
             .args(["/F", "/IM", "Trae.exe"])
             .output()
             .map_err(|e| anyhow!("关闭 Trae IDE 失败: {}", e))?;

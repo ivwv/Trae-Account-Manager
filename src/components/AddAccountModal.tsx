@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import * as api from "../api";
+import type { Account } from "../types";
 
 interface AddAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onToast?: (type: "success" | "error" | "warning" | "info", message: string) => void;
-  onAccountAdded?: () => void;
+  onAccountAdded?: (account: Account) => void;
   quickRegisterShowWindow?: boolean;
 }
 
@@ -35,7 +36,7 @@ export function AddAccountModal({
       const account = await api.readTraeAccount();
       if (account) {
         onToast?.("success", `成功读取 Trae IDE 账号: ${account.email}`);
-        onAccountAdded?.();
+        onAccountAdded?.(account);
         handleClose();
       } else {
         setError("未找到 Trae IDE 登录账号或账号已存在");
@@ -63,7 +64,7 @@ export function AddAccountModal({
           const account = await api.finishBrowserLogin();
           if (browserRunRef.current !== runId) return;
           onToast?.("success", `成功添加账号: ${account.email}`);
-          onAccountAdded?.();
+          onAccountAdded?.(account);
           handleClose();
         } catch (err: any) {
           if (browserRunRef.current !== runId) return;
@@ -110,7 +111,7 @@ export function AddAccountModal({
     try {
       const account = await api.quickRegister(quickRegisterShowWindow);
       onToast?.("success", `注册成功，已导入账号: ${account.email}`);
-      onAccountAdded?.();
+      onAccountAdded?.(account);
       handleClose();
     } catch (err: any) {
       setError(err.message || "快速注册失败");
